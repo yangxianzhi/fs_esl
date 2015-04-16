@@ -58,9 +58,11 @@ app.use(function(err, req, res, next) {
     });
 });
 
-function StartListen()
+function StartListen(port,host)
 {
-    app.listen(3000);
-    console.log('running on http://localhost:3000');
+    port = port || 3000;
+    host = host || "0.0.0.0";
+    console.log('running on http://'+ host + ":" + port);
+    return app.listen(port,host);
 }
 exports.StartListen = StartListen;
