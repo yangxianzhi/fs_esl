@@ -9,6 +9,8 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var reqs = require('./routes/req_esl');
 
+var log = require("./logger").getLogger();
+
 var app = express();
 
 // view engine setup
@@ -62,7 +64,7 @@ function StartListen(port,host)
 {
     port = port || 3000;
     host = host || "0.0.0.0";
-    console.log('running on http://'+ host + ":" + port);
+    log.info('running on http://'+ host + ":" + port);
     return app.listen(port,host);
 }
 exports.StartListen = StartListen;

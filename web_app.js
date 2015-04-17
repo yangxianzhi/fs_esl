@@ -3,9 +3,8 @@
  */
 var sio = require('socket.io');
 var app = require('./app');
-var esl = require('./esl');
-
-var valMap = {};
+var funESL = require('./fs_mod/esl').ESL;
+var esl = new funESL();
 
 var WebApp = exports.WebApp = function(opts) {
     opts = opts || {};
@@ -18,6 +17,7 @@ var WebApp = exports.WebApp = function(opts) {
     this.app = app;
     this.clients = {};
     this.lastSeq = 0;
+    this.valMap = {};
 };
 
 WebApp.prototype._configure = function() {
@@ -29,13 +29,13 @@ WebApp.prototype._configure = function() {
 };
 
 WebApp.prototype.set = function(key, val, cb){
-    valMap[key] = val;
+    this.valMap[key] = val;
     cb();
 }
 
 WebApp.prototype.get = function(key, cb){
     var error = null;
-    var val = valMap[key];
+    var val = this.valMap[key];
     if(!val){
         error = "not found key:" + key;
     }
@@ -79,17 +79,13 @@ WebApp.prototype.start = function() {
     self.io = sio.listen(server);
 
     //connect to freeswitch
-    self.fsw = esl.GetConnect(self.config.fsw,function() {
-        console.log("esl_connection is up");
-        self.fsw.subscribe('MESSAGE', function() {
+    self.fsw = esl.StartConnect(self.config.fsw, function() {
             //self._configure();
             self._init();
         });
-    });
 
-    self.esl_server = esl.GetServer(self.config.server,function(){
-        console.log("esl_server is up %s:%d  myevents:%s",self.config.server.host
-            ,self.config.server.port,self.config.server.myevents);
+    self.esl_server = esl.StartServer(self.config.server,function(){
+
     });
 
     esl.ListenerEvent(self);

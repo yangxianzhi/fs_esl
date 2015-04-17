@@ -1,7 +1,7 @@
 /**
  * Created by qqtech on 2015/4/14.
  */
-var esl = require('../esl');
+var esl = require('./esl');
 var url = require('url');
 
 function parse_cmd(res,req)
