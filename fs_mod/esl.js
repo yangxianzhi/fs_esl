@@ -2,12 +2,17 @@
  * Created by qqtech on 2015/4/14.
  */
 var mod_esl = require('modesl');
+var Call = require('./call').Call;
+var Channel = require('./channel').Channel;
 var logger = require("../logger").getLogger();
+var map = require('hashmap');
 
 var ESL = exports.ESL = function()
 {
     this.esl_server = null;
     this.esl_conn = null;
+    this.calls = new map();
+    this.channels = new map();
 }
 
 ESL.prototype.StartServer = function (opt,cb)
@@ -40,8 +45,15 @@ ESL.prototype.ListenerEvent = function(webapp) {
     var self = this;
     if(self.esl_conn){
         self.esl_conn.on('esl::event::**', function(evt) {
-            if(!(evt.type === 'RE_SCHEDULE' || evt.type === 'HEARTBEAT'))
-            logger.debug('Event:', evt);
+            var evtName = evt.getHeader('Event-Name');
+            if(!(evt.type === 'RE_SCHEDULE'
+                || evt.type === 'HEARTBEAT'
+                || evt.type === 'PRESENCE_IN'
+                || evt.type === 'CUSTOM'
+                || evt.type === 'API'))
+                logger.debug('Event:', evt);
+            if(evtName && evtName.indexOf("CHANNEL") != -1)
+                self.parseEvt(evt);
         });
 
         self.esl_conn.on('esl::event::MESSAGE::*', function(evt) {
@@ -82,3 +94,48 @@ ESL.prototype.ListenerEvent = function(webapp) {
         });
     }
 };
+
+ESL.prototype.parseEvt = function(evt) {
+    var self = this;
+    var CallUUID = evt.getHeader('Channel-Call-UUID');
+    var UniqueID = evt.getHeader('Unique-ID');
+    //var EvtName = evt.getHeader('Event-Name');
+    var ChannlState = evt.getHeader('Channel-State');
+    if(!CallUUID || !UniqueID)
+        return;
+    var call = self.findCalls(CallUUID);
+    var channel = self.findChannels(UniqueID);
+    //if(EvtName === 'CHANNEL_CREATE'){
+        if(!call){
+            call = new Call(CallUUID);
+            self.calls[CallUUID] = call;
+        }
+        if(!channel){
+            channel = new Channel(UniqueID);
+            self.channels[UniqueID] = channel;
+        }
+    //}
+    if(call){
+        call.UpdateInfo(evt);
+    }
+    if(channel){
+        channel.UpdateInfo(evt);
+    }
+
+    if(ChannlState === 'CS_DESTROY')
+    {
+        //insert MySQL
+        self.calls.remove(CallUUID);
+        self.channels.remove(UniqueID);
+    }
+}
+
+ESL.prototype.findCalls  = function(uuid) {
+    var self = this;
+    return self.calls.has(uuid) ? self.calls.get(uuid) : null;
+}
+
+ESL.prototype.findChannels  = function(uuid) {
+    var self = this;
+    return self.channels.has(uuid) ? self.channels.get(uuid) : null;
+}
