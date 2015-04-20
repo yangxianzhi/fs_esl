@@ -13,6 +13,7 @@ var Call = exports.Call = function(uuid) {
     this.AnsweredTime = null;
     this.HangupTime = null;
     this.HangupCause = null;
+    this.CallDuration = null;
 }
 
 Call.prototype.UpdateInfo = function(evt){
@@ -36,6 +37,12 @@ Call.prototype.UpdateInfo = function(evt){
 
     time = evt.getHeader('Caller-Channel-Hangup-Time');
     if(time && time != '0')
-     self.HangupTime = time
+        self.HangupTime = time
+
     self.HangupCause = self.HangupCause || evt.getHeader('Hangup-Cause');
+
+    if(self.HangupTime && self.HangupTime!= '0' && self.AnsweredTime && self.AnsweredTime != '0' && !self.CallDuration)
+    {
+        self.CallDuration = Math.round((parseInt(self.HangupTime,10) - parseInt(self.AnsweredTime,10))/1000000);
+    }
 }

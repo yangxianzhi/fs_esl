@@ -6,6 +6,7 @@ var Call = require('./call').Call;
 var Channel = require('./channel').Channel;
 var logger = require("../logger").getLogger();
 var map = require('hashmap');
+var db = require('../db_mod/database');
 
 var ESL = exports.ESL = function()
 {
@@ -124,7 +125,19 @@ ESL.prototype.parseEvt = function(evt) {
 
     if(ChannlState === 'CS_DESTROY')
     {
-        //insert MySQL
+        //insert MySQL //INSERT INTO calls (UUID, CalleeIDNumber ...) VALUES ('Wilson', 'Champs-Elysees'...)
+        var sql = "INSERT INTO calls (UUID,CalleeIDNumber,CalleeIDName,CallerIDNumber,CallerIDName,CallState,AnswerState,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
+        call.UUID + "','" + call.CalleeIDNumber + "','" + call.CalleeIDName + "','" + call.CallerIDNumber + "','" + call.CallerIDName + "','" +
+        call.CallState + "','" + call.AnswerState + "','" + call.HangupCause + "','" + call.AnsweredTime + "','" + call.HangupTime + "','" + call.CallDuration + "')";
+        db.getDB().query(sql);
+        logger.debug(sql);
+
+        sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr) VALUES ('" +
+        channel.UniqueID + "','" + channel.Name + "','" + channel.State + "','" + channel.Direction + "','" + channel.CodecName + "','" +
+        channel.CallerNetworkAddr + "','" + channel.OtherLegUniqueID + "','" + channel.OtherLegDirection + "','" + channel.OtherLegChannelName + "','" + channel.OtherLegNetworkAddr + "')";
+        db.getDB().query(sql);
+        logger.debug(sql);
+
         self.calls.remove(CallUUID);
         self.channels.remove(UniqueID);
     }
