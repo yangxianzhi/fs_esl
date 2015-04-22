@@ -46,15 +46,13 @@ ESL.prototype.ListenerEvent = function(webapp) {
     var self = this;
     if(self.esl_conn){
         self.esl_conn.on('esl::event::**', function(evt) {
-            var evtName = evt.getHeader('Event-Name');
             if(!(evt.type === 'RE_SCHEDULE'
                 || evt.type === 'HEARTBEAT'
                 || evt.type === 'PRESENCE_IN'
                 || evt.type === 'CUSTOM'
                 || evt.type === 'API'))
                 logger.debug('Event:', evt);
-            if(evtName && evtName.indexOf("CHANNEL") != -1)
-                self.parseEvt(evt);
+            self.parseEvt(evt);
         });
 
         self.esl_conn.on('esl::event::MESSAGE::*', function(evt) {
@@ -100,46 +98,36 @@ ESL.prototype.parseEvt = function(evt) {
     var self = this;
     var CallUUID = evt.getHeader('Channel-Call-UUID');
     var UniqueID = evt.getHeader('Unique-ID');
-    //var EvtName = evt.getHeader('Event-Name');
-    var ChannlState = evt.getHeader('Channel-State');
+    var EvtName = evt.getHeader('Event-Name');
+    var ChannelState = evt.getHeader('Channel-State');
     if(!CallUUID || !UniqueID)
         return;
-    var call = self.findCalls(CallUUID);
-    var channel = self.findChannels(UniqueID);
-    //if(EvtName === 'CHANNEL_CREATE'){
-        if(!call){
-            call = new Call(CallUUID);
-            self.calls[CallUUID] = call;
+
+    if(EvtName && EvtName.indexOf("CHANNEL") != -1){
+        var call = self.findCalls(CallUUID);
+        var channel = self.findChannels(UniqueID);
+        if(EvtName === 'CHANNEL_CREATE'){
+            if(!call){
+                call = new Call(CallUUID);
+                self.calls[CallUUID] = call;
+            }
+            if(!channel){
+                channel = new Channel(UniqueID);
+                self.channels[UniqueID] = channel;
+            }
         }
-        if(!channel){
-            channel = new Channel(UniqueID);
-            self.channels[UniqueID] = channel;
+        if(call){
+            call.UpdateInfo(evt);
         }
-    //}
-    if(call){
-        call.UpdateInfo(evt);
-    }
-    if(channel){
-        channel.UpdateInfo(evt);
-    }
+        if(channel){
+            channel.UpdateInfo(evt);
+        }
 
-    if(ChannlState === 'CS_DESTROY')
-    {
-        //insert MySQL //INSERT INTO calls (UUID, CalleeIDNumber ...) VALUES ('Wilson', 'Champs-Elysees'...)
-        var sql = "INSERT INTO calls (UUID,CalleeIDNumber,CalleeIDName,CallerIDNumber,CallerIDName,CallState,AnswerState,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
-        call.UUID + "','" + call.CalleeIDNumber + "','" + call.CalleeIDName + "','" + call.CallerIDNumber + "','" + call.CallerIDName + "','" +
-        call.CallState + "','" + call.AnswerState + "','" + call.HangupCause + "','" + call.AnsweredTime + "','" + call.HangupTime + "','" + call.CallDuration + "')";
-        db.getDB().query(sql);
-        logger.debug(sql);
-
-        sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr) VALUES ('" +
-        channel.UniqueID + "','" + channel.Name + "','" + channel.State + "','" + channel.Direction + "','" + channel.CodecName + "','" +
-        channel.CallerNetworkAddr + "','" + channel.OtherLegUniqueID + "','" + channel.OtherLegDirection + "','" + channel.OtherLegChannelName + "','" + channel.OtherLegNetworkAddr + "')";
-        db.getDB().query(sql);
-        logger.debug(sql);
-
-        self.calls.remove(CallUUID);
-        self.channels.remove(UniqueID);
+        if(ChannelState === 'CS_DESTROY')
+        {
+            self.calls.remove(CallUUID);
+            self.channels.remove(UniqueID);
+        }
     }
 }
 

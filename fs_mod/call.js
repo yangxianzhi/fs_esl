@@ -1,48 +1,78 @@
 /**
  * Created by qqtech on 2015/4/17.
  */
+var db = require('../db_mod/database');
+var logger = require("../logger").getLogger();
 
 var Call = exports.Call = function(uuid) {
     this.UUID = uuid;
-    this.CalleeIDNumber = null;
-    this.CalleeIDName = null;
-    this.CallerIDNumber = null;
-    this.CallerIDName = null;
-    this.CallState = null;
-    this.AnswerState = null;
-    this.AnsweredTime = null;
-    this.HangupTime = null;
-    this.HangupCause = null;
-    this.CallDuration = null;
+    this.CalleeIDNumber = '';
+    this.CalleeIDName = '';
+    this.CallerIDNumber = '';
+    this.CallerIDName = '';
+    this.CallState = '';
+    this.AnswerState = '';
+    this.AnsweredTime = '';
+    this.HangupTime = '';
+    this.HangupCause = '';
+    this.CallDuration = 0;
 }
 
 Call.prototype.UpdateInfo = function(evt){
     var self = this;
-    self.CalleeIDName = self.CalleeIDName || evt.getHeader('Caller-Callee-ID-Name');
-    self.CalleeIDNumber = self.CalleeIDNumber || evt.getHeader('Caller-Callee-ID-Number');
-    self.CallerIDName = self.CallerIDName || evt.getHeader('Caller-Caller-ID-Name');
-    self.CallerIDNumber = self.CallerIDNumber || evt.getHeader('Caller-Caller-ID-Number');
 
-    var callState = evt.getHeader('Channel-Call-State');
-    if(callState)
-        self.CallState = callState;
+    var val = evt.getHeader('Channel-Call-State');
+    if(val === self.CallState) return;
 
-    var answerState = evt.getHeader('Answer-State');
-    if(answerState)
-        self.AnswerState = answerState;
+    if(val)
+        self.CallState = val;
 
-    var time = evt.getHeader('Caller-Channel-Answered-Time');
-    if(time && time != '0')
-        self.AnsweredTime = time;
+    val = evt.getHeader('Caller-Callee-ID-Name');
+    if(val && self.CalleeIDName === '')
+        self.CalleeIDName = val;
 
-    time = evt.getHeader('Caller-Channel-Hangup-Time');
-    if(time && time != '0')
-        self.HangupTime = time
+    val = evt.getHeader('Caller-Callee-ID-Number');
+    if(val && self.CalleeIDNumber === '')
+        self.CalleeIDNumber = val;
 
-    self.HangupCause = self.HangupCause || evt.getHeader('Hangup-Cause');
+    val = evt.getHeader('Caller-Caller-ID-Name');
+    if(val && self.CallerIDName === '')
+        self.CallerIDName = val;
 
-    if(self.HangupTime && self.HangupTime!= '0' && self.AnsweredTime && self.AnsweredTime != '0' && !self.CallDuration)
+    val = evt.getHeader('Caller-Caller-ID-Number');
+    if(val && self.CallerIDNumber === '')
+        self.CallerIDNumber = val;
+
+    val = evt.getHeader('Answer-State');
+    if(val)
+        self.AnswerState = val;
+
+    val = evt.getHeader('Caller-Channel-Answered-Time');
+    if(val && val != '0' && self.AnsweredTime === '')
+        self.AnsweredTime = val;
+
+    val = evt.getHeader('Caller-Channel-Hangup-Time');
+    if(val && val != '0' && self.HangupTime === '')
+        self.HangupTime = val
+
+    val = evt.getHeader('Hangup-Cause');
+    if(val && self.HangupCause === '')
+        self.HangupCause = val;
+
+    if(self.HangupTime !='' && self.HangupTime!= '0'
+        && self.AnsweredTime !=''  && self.AnsweredTime != '0'
+        && self.CallDuration == 0)
     {
         self.CallDuration = Math.round((parseInt(self.HangupTime,10) - parseInt(self.AnsweredTime,10))/1000000);
+    }
+
+    if(self.AnswerState === 'hangup'){
+        //insert MySQL //INSERT INTO calls (UUID, CalleeIDNumber ...) VALUES ('UUID', 'CalleeIDNumber'...)
+        var sql = "INSERT INTO calls (UUID,CalleeIDNumber,CalleeIDName,CallerIDNumber,CallerIDName,CallState,AnswerState,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
+            self.UUID + "','" + self.CalleeIDNumber + "','" + self.CalleeIDName + "','" + self.CallerIDNumber + "','" +
+            self.CallerIDName + "','" + self.CallState + "','" + self.AnswerState + "','" + self.HangupCause + "','" +
+            self.AnsweredTime + "','" + self.HangupTime + "','" + self.CallDuration + "')";
+        db.getDB().query(sql);
+        logger.debug(sql);
     }
 }

@@ -1,32 +1,67 @@
 /**
  * Created by yangxz on 15-4-18.
  */
+var db = require('../db_mod/database');
+var logger = require("../logger").getLogger();
 
 var Channel = exports.Channel = function(UniqueID){
     this.UniqueID = UniqueID;
-    this.Name = null;
-    this.State = null;
-    this.Direction = null;
-    this.CodecName = null;
-    this.CallerNetworkAddr = null;
-    this.OtherLegUniqueID = null;
-    this.OtherLegDirection = null;
-    this.OtherLegChannelName = null;
-    this.OtherLegNetworkAddr = null;
+    this.Name = '';
+    this.State = '';
+    this.Direction = '';
+    this.CodecName = '';
+    this.CallerNetworkAddr = '';
+    this.OtherLegUniqueID = '';
+    this.OtherLegDirection = '';
+    this.OtherLegChannelName = '';
+    this.OtherLegNetworkAddr = '';
 }
 
-Channel.prototype.UpdateInfo = function(evt){
+Channel.prototype.UpdateInfo = function(evt) {
     var self = this;
-    self.Name = self.Name || evt.getHeader('Channel-Name');
-    var state = evt.getHeader('Channel-State');
-    if(state){
-        self.State = state;
+
+    var val = evt.getHeader('Channel-State');
+    if (val === self.State) return;
+
+    if (val)
+        self.State = val;
+
+    val = evt.getHeader('Channel-Name');
+    if (val && self.Name === '')
+        self.Name = val;
+
+    val = evt.getHeader('Call-Direction');
+    if (val && self.Direction === '')
+        self.Direction = val;
+
+    self.CodecName = evt.getHeader('Channel-Read-Codec-Name') + ' + ' + evt.getHeader('Channel-Write-Codec-Name');
+
+    val = evt.getHeader('Caller-Network-Addr');
+    if (val && self.CallerNetworkAddr === '')
+        self.CallerNetworkAddr = val;
+
+    val = evt.getHeader('Other-Leg-Unique-ID');
+    if (val && self.OtherLegUniqueID === '')
+        self.OtherLegUniqueID = val;
+
+    val = evt.getHeader('Other-Leg-Direction');
+    if (val && self.OtherLegDirection === '')
+        self.OtherLegDirection = val;
+
+    val = evt.getHeader('Other-Leg-Channel-Name');
+    if (val && self.OtherLegChannelName === '')
+        self.OtherLegChannelName = val;
+
+    val = evt.getHeader('Other-Leg-Network-Addr');
+    if (val && self.OtherLegNetworkAddr === '')
+        self.OtherLegNetworkAddr = val;
+
+    if (self.State === 'CS_DESTROY') {
+        var sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr) VALUES ('" +
+            self.UniqueID + "','" + self.Name + "','" + self.State + "','" + self.Direction + "','" + self.CodecName + "','" +
+            self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
+            self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "')";
+        db.getDB().query(sql);
+        logger.debug(sql);
     }
-    self.Direction = self.Direction || evt.getHeader('Call-Direction');
-    self.CodecName = self.CodecName || evt.getHeader('Channel-Read-Codec-Name') + ' + ' + evt.getHeader('Channel-Write-Codec-Name');
-    self.CallerNetworkAddr = self.CallerNetworkAddr || evt.getHeader('Caller-Network-Addr');
-    self.OtherLegUniqueID = self.OtherLegUniqueID || evt.getHeader('Other-Leg-Unique-ID');
-    self.OtherLegDirection = self.OtherLegDirection || evt.getHeader('Other-Leg-Direction');
-    self.OtherLegChannelName = self.OtherLegChannelName || evt.getHeader('Other-Leg-Channel-Name');
-    self.OtherLegNetworkAddr = self.OtherLegNetworkAddr || evt.getHeader('Other-Leg-Network-Addr');
 }

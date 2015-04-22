@@ -16,6 +16,20 @@ Date: 2015-04-20 16:15:29
 SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------
+-- Table structure for accounts
+-- ----------------------------
+DROP TABLE IF EXISTS `accounts`;
+CREATE TABLE `accounts` (
+  `id` char(20) NOT NULL DEFAULT '' COMMENT '用户账号ID',
+  `name` char(20) NOT NULL DEFAULT '' COMMENT '用户名称',
+  `cash` double precision NOT NULL DEFAULT 0 COMMENT '余额',
+  `rate` double precision NOT NULL DEFAULT 0 COMMENT '费率：每分钟通话产生的费用(单位：元)',
+  `phone` char(20) NOT NULL DEFAULT '' COMMENT '联系电话',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
 -- Table structure for calls
 -- ----------------------------
 DROP TABLE IF EXISTS `calls`;
@@ -30,7 +44,7 @@ CREATE TABLE `calls` (
   `HangupCause` char(64) NOT NULL DEFAULT '' COMMENT '挂机原因',
   `AnsweredTime` char(20) NOT NULL DEFAULT '' COMMENT '应答时间',
   `HangupTime` char(20) NOT NULL DEFAULT '' COMMENT '挂机时间',
-  `CallDuration` int(8) NOT NULL DEFAULT '0' COMMENT '呼叫时长',
+  `CallDuration` int(8) NOT NULL DEFAULT '0' COMMENT '呼叫时长单位秒',
   PRIMARY KEY (`UUID`),
   UNIQUE KEY `UUID` (`UUID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
