@@ -16,6 +16,7 @@ var Channel = exports.Channel = function(UniqueID){
     this.OtherLegChannelName = '';
     this.OtherLegNetworkAddr = '';
     this.billing_account = '';
+    this.billing_heartbeat = null;
     this.isInsert = false;
 }
 
@@ -60,6 +61,8 @@ Channel.prototype.UpdateInfo = function(evt) {
     val = evt.getHeader('variable_billing_account');
     if (val && self.billing_account === '')
         self.billing_account = val;
+
+    self.billing_heartbeat = self.billing_heartbeat || evt.getHeader('variable_billing_heartbeat');
 
     if (self.State === 'CS_DESTROY' && !self.isInsert) {
         var sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr,billing_account) VALUES ('" +

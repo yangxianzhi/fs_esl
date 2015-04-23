@@ -4,6 +4,7 @@
 
 var db = require('../db_mod/database');
 var map = require('hashmap');
+var logger = require('../logger').getLogger();
 
 var billing = exports.billing = function(){
     this.db_column_account = 'id';
@@ -15,12 +16,14 @@ var billing = exports.billing = function(){
     this.billingAccount = null;
     this.billingrate = null;
     this.last_ts = null;
+    this.billingYes = null;
 }
 
 billing.prototype.nibble = function(evt,call) {
     var self = this;
     //var UniqueID = evt.getHeader('Unique-ID');
     self.billingAccount = self.billingAccount || evt.getHeader('variable_billing_account');
+    self.billingYes = self.billingYes || evt.getHeader('variable_billing_yes');
 
     if(self.billingAccount){
         if(!self.billingrate) {
@@ -32,7 +35,7 @@ billing.prototype.nibble = function(evt,call) {
                     self.billingrate = rows[0].nibble_balance;
             });
         }
-        if(self.billingrate) {
+        if(self.billingrate && self.billingYes) {
             if (call.CallState && call.CallState === 'RINGING' && self.isOpenedHeartbeat == false) {
                 self.isOpenedHeartbeat = true;
             }
@@ -54,6 +57,7 @@ billing.prototype.nibble = function(evt,call) {
                 var sql = "UPDATE " + self.db_table + " SET " + self.db_column_cash + "=" +  self.db_column_cash
                     + "-" + billing_amount + " WHERE " +self.db_column_account+ " ='" + self.billingAccount + "'";
                 db.getDB().query(sql)
+                logger.info(sql);
             }
         }
     }

@@ -123,10 +123,29 @@ ESL.prototype.parseEvt = function(evt) {
     }
     if(channel){
         channel.UpdateInfo(evt);
+
+        if(channel.billing_heartbeat && channel.billing_heartbeat != '0'){
+            var args = new Array();
+            args.join(channel.UniqueID);
+            args.join(channel.billing_heartbeat);
+            self.esl_conn.api('uuid_session_heartbeat',args,function(res){
+                logger.info('switch_core_session_enable_heartbeat :' + res.getBody());
+                return;
+            });
+            channel.billing_heartbeat = '0';
+        }
     }
 
     if(ChannelState === 'CS_DESTROY')
     {
+        if(channel.billing_heartbeat === '0'){
+            var args = new Array();
+            args.join(channel.UniqueID);
+            args.join(channel.billing_heartbeat);
+            self.esl_conn.api('uuid_session_heartbeat',args,function(res){
+                logger.info('switch_core_session_disable_heartbeat :' + res.getBody());
+            });
+        }
         self.calls.remove(CallUUID);
         self.channels.remove(UniqueID);
     }

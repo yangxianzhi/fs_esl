@@ -169,9 +169,9 @@
       </condition>
     </extension>
     
-      <extension name="outbound">
+    <extension name="outbound">
 	  <condition field="destination_number" expression="^9(10[01][0-9])$">
-	    <action application="set" data="billing_account=83245707"/>
+	    <action application="set" data="billing_yes=true"/>
 	    <action application="set" data="billing_heartbeat=60"/>
 	    <!--action application="set" data="nibble_rate=0.05"/>
 	    <action application="set" data="$${nibble_account}"/-->
