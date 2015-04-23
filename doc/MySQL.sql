@@ -65,6 +65,7 @@ CREATE TABLE `channels` (
   `OtherLegDirection` char(10) NOT NULL DEFAULT '' COMMENT '对端通道方向',
   `OtherLegChannelName` char(64) NOT NULL DEFAULT '' COMMENT '对端通道名称',
   `OtherLegNetworkAddr` char(16) NOT NULL DEFAULT '' COMMENT '对端通道IP',
+  `billing_account` char(16) NOT NULL DEFAULT '' COMMENT '计费账号',
   PRIMARY KEY (`UniqueID`),
   UNIQUE KEY `UniqueID` (`UniqueID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -6,7 +6,6 @@ var Call = require('./call').Call;
 var Channel = require('./channel').Channel;
 var logger = require("../logger").getLogger();
 var map = require('hashmap');
-var db = require('../db_mod/database');
 
 var ESL = exports.ESL = function()
 {
@@ -98,45 +97,37 @@ ESL.prototype.parseEvt = function(evt) {
     var self = this;
     var CallUUID = evt.getHeader('Channel-Call-UUID');
     var UniqueID = evt.getHeader('Unique-ID');
-    var EvtName = evt.getHeader('Event-Name');
     var ChannelState = evt.getHeader('Channel-State');
     if(!CallUUID || !UniqueID)
         return;
 
-    if(EvtName && EvtName.indexOf("CHANNEL") != -1){
-        var call = self.findCalls(CallUUID);
-        var channel = self.findChannels(UniqueID);
-        if(EvtName === 'CHANNEL_CREATE'){
-            if(!call){
-                call = new Call(CallUUID);
-                self.calls[CallUUID] = call;
-            }
-            if(!channel){
-                channel = new Channel(UniqueID);
-                self.channels[UniqueID] = channel;
-            }
-        }
-        if(call){
-            call.UpdateInfo(evt);
-        }
-        if(channel){
-            channel.UpdateInfo(evt);
-        }
-
-        if(ChannelState === 'CS_DESTROY')
-        {
-            self.calls.remove(CallUUID);
-            self.channels.remove(UniqueID);
-        }
+    var call=null, channel=null;
+    if(self.calls.has(CallUUID)){
+        call = self.calls.get(CallUUID);
     }
-}
+    else {
+        call = new Call(CallUUID);
+        self.calls.set(CallUUID, call);
+    }
 
-ESL.prototype.findCalls  = function(uuid) {
-    var self = this;
-    return self.calls.has(uuid) ? self.calls.get(uuid) : null;
-}
+    if(self.channels.has(UniqueID)){
+        channel = self.channels.get(UniqueID);
+    }
+    else{
+        channel = new Channel(UniqueID);
+        self.channels.set(UniqueID, channel);
+    }
 
-ESL.prototype.findChannels  = function(uuid) {
-    var self = this;
-    return self.channels.has(uuid) ? self.channels.get(uuid) : null;
+    if(call){
+        call.UpdateInfo(evt);
+    }
+    if(channel){
+        channel.UpdateInfo(evt);
+    }
+
+    if(ChannelState === 'CS_DESTROY')
+    {
+        self.calls.remove(CallUUID);
+        self.channels.remove(UniqueID);
+    }
 }

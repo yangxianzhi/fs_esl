@@ -90,3 +90,5 @@ WebApp.prototype.start = function() {
 
     esl.ListenerEvent(self);
 };
+
+//exports.getesl = esl;

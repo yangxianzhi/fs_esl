@@ -15,14 +15,15 @@ var Channel = exports.Channel = function(UniqueID){
     this.OtherLegDirection = '';
     this.OtherLegChannelName = '';
     this.OtherLegNetworkAddr = '';
+    this.billing_account = '';
+    this.isInsert = false;
 }
 
 Channel.prototype.UpdateInfo = function(evt) {
     var self = this;
 
     var val = evt.getHeader('Channel-State');
-    if (val === self.State) return;
-
+    //if (val === self.State) return;
     if (val)
         self.State = val;
 
@@ -56,12 +57,18 @@ Channel.prototype.UpdateInfo = function(evt) {
     if (val && self.OtherLegNetworkAddr === '')
         self.OtherLegNetworkAddr = val;
 
-    if (self.State === 'CS_DESTROY') {
-        var sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr) VALUES ('" +
+    val = evt.getHeader('variable_billing_account');
+    if (val && self.billing_account === '')
+        self.billing_account = val;
+
+    if (self.State === 'CS_DESTROY' && !self.isInsert) {
+        var sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr,billing_account) VALUES ('" +
             self.UniqueID + "','" + self.Name + "','" + self.State + "','" + self.Direction + "','" + self.CodecName + "','" +
             self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
-            self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "')";
+            self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
         db.getDB().query(sql);
         logger.debug(sql);
+
+        self.isInsert = true;
     }
 }
