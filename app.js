@@ -7,7 +7,7 @@ var bodyParser = require('body-parser');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
-var reqs = require('./routes/req_esl');
+var req_esl = require('./routes/req_esl');
 
 var log = require("./logger").getLogger();
 
@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/users', users);
-app.use('/esl', reqs);
+app.post('/fsapi', req_esl.fsapi);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -58,6 +58,10 @@ app.use(function(err, req, res, next) {
         message: err.message,
         error: {}
     });
+});
+
+process.on('uncaughtException', function(err){
+    log.error('nodejs start app uncaughtException ' + err);
 });
 
 function StartListen(port,host)

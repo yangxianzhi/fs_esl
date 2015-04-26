@@ -18,6 +18,7 @@
     <!-- <load module="mod_xml_curl"/> -->
     <!-- <load module="mod_xml_cdr"/> -->
     <!-- <load module="mod_xml_scgi"/> -->
+    <load module="mod_xml_curl"/> 
 
     <!-- Event Handlers -->
     <load module="mod_cdr_csv"/>

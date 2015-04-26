@@ -3,8 +3,8 @@
  */
 var sio = require('socket.io');
 var app = require('./app');
-var funESL = require('./fs_mod/esl').ESL;
-var esl = new funESL();
+var fsESL = require('./fs_mod/esl').ESL;
+var esl = new fsESL();
 
 var WebApp = exports.WebApp = function(opts) {
     opts = opts || {};
@@ -75,20 +75,33 @@ WebApp.prototype._init = function() {
 
 WebApp.prototype.start = function() {
     var self = this;
+    self.startHttpServer();
+    self.startEslConnect();
+    self.startEslServer();
+}
+
+WebApp.prototype.startHttpServer = function(){
+    var self = this;
     var server = self.app.StartListen(self.port, self.host);
     self.io = sio.listen(server);
+}
 
+WebApp.prototype.startEslConnect = function(){
+    var self = this;
     //connect to freeswitch
     self.fsw = esl.StartConnect(self.config.fsw, function() {
-            //self._configure();
-            self._init();
-        });
+        //self._configure();
+        self._init();
+    });
+    esl.ListenerConnectEvent(self);
+}
 
+WebApp.prototype.startEslServer = function(){
+    var self = this;
     self.esl_server = esl.StartServer(self.config.server,function(){
 
     });
+    esl.ListenerServerEvent();
+}
 
-    esl.ListenerEvent(self);
-};
-
-//exports.getesl = esl;
+exports.getesl = esl;

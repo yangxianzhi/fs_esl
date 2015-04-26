@@ -30,6 +30,20 @@ CREATE TABLE `accounts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Table structure for sip_users
+-- ----------------------------
+DROP TABLE IF EXISTS `sip_users`;
+CREATE TABLE `sip_users` (
+  `caller_id_number` char(20) NOT NULL DEFAULT '' COMMENT 'sip id 号码',
+  `caller_id_name` char(20) NOT NULL DEFAULT '' COMMENT 'sip id 名称,可以与号码一样，也可以是名字',
+  `password` char(20) NOT NULL DEFAULT '' COMMENT 'sip注册密码',
+  `billing_account` char(20) NOT NULL DEFAULT '' COMMENT '关联的计费账号，外呼计费',
+  `outbound_caller_id_number` char(20) NOT NULL DEFAULT '' COMMENT '外呼显示号码',
+  PRIMARY KEY (`caller_id_number`),
+  UNIQUE KEY `caller_id_number` (`caller_id_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
 -- Table structure for calls
 -- ----------------------------
 DROP TABLE IF EXISTS `calls`;

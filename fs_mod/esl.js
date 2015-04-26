@@ -41,7 +41,7 @@ ESL.prototype.StartConnect = function (opt,cb)
     return self.esl_conn;
 };
 
-ESL.prototype.ListenerEvent = function(webapp) {
+ESL.prototype.ListenerConnectEvent = function(webapp) {
     var self = this;
     if(self.esl_conn){
         self.esl_conn.on('esl::event::**', function(evt) {
@@ -72,8 +72,13 @@ ESL.prototype.ListenerEvent = function(webapp) {
 
         self.esl_conn.on('error', function(err) {
             logger.error(err);
+            //webapp.startEslConnect();
         });
     }
+};
+
+ESL.prototype.ListenerServerEvent = function(){
+    var self = this;
     if(self.esl_server){
         self.esl_server.on('connection::ready', function(conn, id) {
             logger.debug('new call ' + id);
@@ -91,7 +96,7 @@ ESL.prototype.ListenerEvent = function(webapp) {
             });
         });
     }
-};
+}
 
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
