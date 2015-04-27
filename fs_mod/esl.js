@@ -45,12 +45,12 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
     var self = this;
     if(self.esl_conn){
         self.esl_conn.on('esl::event::**', function(evt) {
-            if(!(evt.type === 'RE_SCHEDULE'
+            /*if(!(evt.type === 'RE_SCHEDULE'
                 || evt.type === 'HEARTBEAT'
                 || evt.type === 'PRESENCE_IN'
                 || evt.type === 'CUSTOM'
                 || evt.type === 'API'))
-                logger.debug('Event:', evt);
+                logger.debug('Event:', evt);*/
             self.parseEvt(evt);
         });
 

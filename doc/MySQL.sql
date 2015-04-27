@@ -39,6 +39,9 @@ CREATE TABLE `sip_users` (
   `password` char(20) NOT NULL DEFAULT '' COMMENT 'sip注册密码',
   `billing_account` char(20) NOT NULL DEFAULT '' COMMENT '关联的计费账号，外呼计费',
   `outbound_caller_id_number` char(20) NOT NULL DEFAULT '' COMMENT '外呼显示号码',
+  `binding_work_number` char(20) NOT NULL DEFAULT '' COMMENT '绑定的工号',
+  `binding_mobile_number` char(20) NOT NULL DEFAULT '' COMMENT '绑定的手机号',
+  `resonance` char(1) NOT NULL DEFAULT '0' COMMENT '是否共振,0 只呼叫指定号码不共振也不顺振，1 共振 手机和话机同振，2 顺振',
   PRIMARY KEY (`caller_id_number`),
   UNIQUE KEY `caller_id_number` (`caller_id_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

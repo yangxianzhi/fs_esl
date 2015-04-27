@@ -168,17 +168,6 @@
 	<action application="export" data="RFC2822_DATE=${strftime(%a, %d %b %Y %T %z)}"/>
       </condition>
     </extension>
-    
-    <extension name="outbound">
-	  <condition field="destination_number" expression="^9(\d+)$">
-	    <action application="set" data="billing_yes=true"/>
-	    <action application="set" data="billing_heartbeat=60"/>
-	    <!--action application="set" data="nibble_rate=0.05"/>
-	    <action application="set" data="$${nibble_account}"/-->
-	    <action application="log" data="CRIT WARNING outbound sofia/gateway/gw1/$1"/>
-	    <action application="bridge" data="sofia/gateway/gw1/$1"/>
-	  </condition>
-	</extension>
 
     <!-- If sip_req_host is not a local domain then this has to be an external sip uri -->
     <!--
@@ -806,6 +795,14 @@
 	<action application="transfer" data="$1 enum"/>
       </condition>
     </extension>
+    
+    <extension name="outbound">
+	  	<condition field="destination_number" expression="^9(\d+)$">
+		    <action application="set" data="billing_yes=true"/>
+		    <action application="set" data="billing_heartbeat=60"/>
+		    <action application="bridge" data="sofia/gateway/gw1/$1"/>
+	  	</condition>
+		</extension>
 
   </context>
 </include>
