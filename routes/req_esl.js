@@ -1,16 +1,14 @@
 /**
  * Created by qqtech on 2015/4/14.
  */
-//var express = require('express');
-var fsapp = require('../fs_mod/fs_app');
-//var router = express.Router();
+var FS_API = require('../fs_mod/fs_app').FS_API;
+var fs_app = new FS_API();
 
-/* GET users listing. */
-//router.get('/', function(req, res, next) {
-//    fsapp.cmd(res,req);
-//});
-//module.exports = router;
+exports.directory = function(req,res) {
+    fs_app.parse_directory(req,res);
+}
 
-exports.fsapi = function(req,res) {
-    fsapp.cmd(res,req);
+
+exports.dialplan = function(req,res) {
+    fs_app.parse_dialplan(req,res);
 }

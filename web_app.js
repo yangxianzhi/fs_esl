@@ -20,14 +20,6 @@ var WebApp = exports.WebApp = function(opts) {
     this.valMap = {};
 };
 
-WebApp.prototype._configure = function() {
-    var self = this;
-    //self.app.use(express.static('public'));
-    //self.app.use(express.static(path.join(__dirname, '../public')));
-    //self.io.set('log level', 1);
-    //self.io.debug.set();
-};
-
 WebApp.prototype.set = function(key, val, cb){
     this.valMap[key] = val;
     cb();

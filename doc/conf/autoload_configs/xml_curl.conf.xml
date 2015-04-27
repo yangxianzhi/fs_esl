@@ -46,7 +46,11 @@
       <!--<param name="enable-post-var" value="Unique-ID"/>-->
     </binding>
   	<binding name="directory">
-      <param name="gateway-url" value="http://127.0.0.1:8181/fsapi" bindings="directory"/>
+      <param name="gateway-url" value="http://127.0.0.1:8181/directory" bindings="directory"/>
+    </binding>
+
+  	<binding name="dialplan">
+      <param name="gateway-url" value="http://127.0.0.1:8181/dialplan" bindings="dialplan"/>
     </binding>
   </bindings>
 </configuration>

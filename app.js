@@ -27,7 +27,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/users', users);
-app.post('/fsapi', req_esl.fsapi);
+app.post('/directory', req_esl.directory);
+app.post('/dialplan', req_esl.dialplan);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
