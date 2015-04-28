@@ -23,7 +23,7 @@ billing.prototype.nibble = function(evt,call) {
     var self = this;
     //var UniqueID = evt.getHeader('Unique-ID');
     self.billingAccount = self.billingAccount || evt.getHeader('variable_billing_account');
-    self.billingYes = self.billingYes || evt.getHeader('variable_billing_yes');
+    self.billingYes = self.billingYes || (evt.getHeader('variable_billing_yes') === 'true');
 
     if(self.billingAccount){
         if(!self.billingrate) {
