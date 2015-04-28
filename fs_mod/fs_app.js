@@ -39,7 +39,7 @@ FS_API.prototype.parse_directory = function (req,res){
                         <variables>\
                         <variable name="toll_allow" value="domestic,international,local"/>\
                         <variable name="accountcode" value="' + rows[0].user + '"/>\
-                        <variable name="user_context" value="default"/>\
+                        <variable name="user_context" value="custom_dialplan"/>\
                         <variable name="effective_caller_id_name" value="' + rows[0].name + '"/>\
                         <variable name="effective_caller_id_number" value="' + rows[0].user + '"/>\
                         <variable name="outbound_caller_id_name" value="' + rows[0].ANS + '"/>\
@@ -68,10 +68,10 @@ FS_API.prototype.parse_directory = function (req,res){
 FS_API.prototype.parse_dialplan = function (req,res){
     res.send('<document type="freeswitch/xml">\
     <section name="dialplan" description="RE Dial Plan For FreeSwitch">\
-    <context name="default">\
-    <extension name="test9">\
-    <condition field="destination_number" expression="^83789$">\
-    <action application="bridge" data="iax/guest@conference.freeswitch.org/888"/>\
+    <context name="custom_dialplan">\
+    <extension name="custom">\
+    <condition field="destination_number" expression="^(.*)$">\
+	<action application="transfer" data="$1 XML default"/>\
     </condition>\
     </extension>\
     </context>\

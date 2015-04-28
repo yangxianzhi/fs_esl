@@ -16,6 +16,7 @@ var Call = exports.Call = function(uuid) {
     this.AnsweredTime = '';
     this.HangupTime = '';
     this.HangupCause = '';
+    this.direction = '';
     this.CallDuration = 0;
     this.billing = new billing();
     this.isInsert = false;

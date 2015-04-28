@@ -49,8 +49,8 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
                 || evt.type === 'HEARTBEAT'
                 || evt.type === 'PRESENCE_IN'
                 || evt.type === 'CUSTOM'
-                || evt.type === 'API'))
-                logger.debug('Event:', evt);*/
+                || evt.type === 'API'))*/
+                logger.debug('Event:', evt);
             self.parseEvt(evt);
         });
 
@@ -100,58 +100,67 @@ ESL.prototype.ListenerServerEvent = function(){
 
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
-    var CallUUID = evt.getHeader('Channel-Call-UUID');
+    var CallUUID = evt.getHeader('variable_call_uuid');
+    if(CallUUID){
+        var call=null;
+        if(self.calls.has(CallUUID)){
+            call = self.calls.get(CallUUID);
+        }
+        else {
+            if(evt.getHeader('Channel-Call-State') != 'HANGUP')
+            {
+                call = new Call(CallUUID);
+                self.calls.set(CallUUID, call);
+            }
+        }
+
+        if(call){
+            call.UpdateInfo(evt);
+        }
+        if(evt.getHeader('Event-Name') === 'CHANNEL_DESTROY')
+        {
+            self.calls.remove(CallUUID);
+        }
+    }
+
     var UniqueID = evt.getHeader('Unique-ID');
-    var ChannelState = evt.getHeader('Channel-State');
-    if(!CallUUID || !UniqueID)
-        return;
-
-    var call=null, channel=null;
-    if(self.calls.has(CallUUID)){
-        call = self.calls.get(CallUUID);
-    }
-    else {
-        call = new Call(CallUUID);
-        self.calls.set(CallUUID, call);
-    }
-
-    if(self.channels.has(UniqueID)){
-        channel = self.channels.get(UniqueID);
-    }
-    else{
-        channel = new Channel(UniqueID);
-        self.channels.set(UniqueID, channel);
-    }
-
-    if(call){
-        call.UpdateInfo(evt);
-    }
-    if(channel){
-        channel.UpdateInfo(evt);
-
-        if(channel.billing_heartbeat && channel.billing_heartbeat != '0'){
-            var args = new Array();
-            args.join(channel.UniqueID);
-            args.join(channel.billing_heartbeat);
-            self.esl_conn.api('uuid_session_heartbeat',args,function(res){
-                logger.info('switch_core_session_enable_heartbeat :' + res.getBody());
-                return;
-            });
-            channel.billing_heartbeat = '0';
+    if(UniqueID){
+        var channel=null;
+        if(self.channels.has(UniqueID)){
+            channel = self.channels.get(UniqueID);
         }
-    }
-
-    if(ChannelState === 'CS_DESTROY')
-    {
-        if(channel.billing_heartbeat === '0'){
-            var args = new Array();
-            args.join(channel.UniqueID);
-            args.join(channel.billing_heartbeat);
-            self.esl_conn.api('uuid_session_heartbeat',args,function(res){
-                logger.info('switch_core_session_disable_heartbeat :' + res.getBody());
-            });
+        else{
+            channel = new Channel(UniqueID);
+            self.channels.set(UniqueID, channel);
         }
-        self.calls.remove(CallUUID);
-        self.channels.remove(UniqueID);
+
+        if(channel){
+            channel.UpdateInfo(evt);
+
+            if(channel.billing_heartbeat && channel.billing_heartbeat != '0'){
+                var args = new Array();
+                args.push(channel.UniqueID);
+                args.push(channel.billing_heartbeat);
+                self.esl_conn.api('uuid_session_heartbeat',args,function(res){
+                    logger.info('switch_core_session_enable_heartbeat :' + res.getBody());
+                    return;
+                });
+                channel.billing_heartbeat = '0';
+            }
+        }
+
+        var ChannelState = evt.getHeader('Channel-State');
+        if(ChannelState === 'CS_DESTROY')
+        {
+            /*if(channel.billing_heartbeat === '0'){
+                var args = new Array();
+                args.push(channel.UniqueID);
+                args.push(channel.billing_heartbeat);
+                self.esl_conn.api('uuid_session_heartbeat',args,function(res){
+                    logger.info('switch_core_session_disable_heartbeat :' + res.getBody());
+                });
+            }*/
+            self.channels.remove(UniqueID);
+        }
     }
 }

@@ -75,6 +75,7 @@ CREATE TABLE `channels` (
   `UniqueID` char(40) NOT NULL DEFAULT '' COMMENT '通道 UniqueID',
   `Name` char(64) NOT NULL DEFAULT '' COMMENT '通道名称',
   `State` char(20) NOT NULL DEFAULT '' COMMENT '通道状态',
+  `CreatedTime` char(20) NOT NULL DEFAULT '' COMMENT '通道创建时间',
   `Direction` char(10) NOT NULL DEFAULT '' COMMENT '通道方向',
   `CodecName` char(16) NOT NULL DEFAULT '' COMMENT '通道编码 （读 + 写）编码',
   `CallerNetworkAddr` char(16) NOT NULL DEFAULT '' COMMENT '通道IP',

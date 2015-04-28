@@ -749,6 +749,14 @@
         <action application="hangup"/>
       </condition>
     </extension>
+    
+    <extension name="outbound">
+	  	<condition field="destination_number" expression="^9(\d+)$">
+		    <action application="set" data="billing_yes=true"/>
+		    <action application="set" data="billing_heartbeat=60"/>
+		    <action application="bridge" data="sofia/gateway/gw1/$1"/>
+	  	</condition>
+		</extension>
 
     <!--
 	You can place files in the default directory to get included.
@@ -795,14 +803,6 @@
 	<action application="transfer" data="$1 enum"/>
       </condition>
     </extension>
-    
-    <extension name="outbound">
-	  	<condition field="destination_number" expression="^9(\d+)$">
-		    <action application="set" data="billing_yes=true"/>
-		    <action application="set" data="billing_heartbeat=60"/>
-		    <action application="bridge" data="sofia/gateway/gw1/$1"/>
-	  	</condition>
-		</extension>
 
   </context>
 </include>

@@ -8,6 +8,7 @@ var Channel = exports.Channel = function(UniqueID){
     this.UniqueID = UniqueID;
     this.Name = '';
     this.State = '';
+    this.CreatedTime = '';
     this.Direction = '';
     this.CodecName = '';
     this.CallerNetworkAddr = '';
@@ -35,6 +36,10 @@ Channel.prototype.UpdateInfo = function(evt) {
     val = evt.getHeader('Call-Direction');
     if (val && self.Direction === '')
         self.Direction = val;
+
+    val = evt.getHeader('Caller-Channel-Created-Time');
+    if (val && val != '0' && self.CreatedTime === '')
+        self.CreatedTime = new Date(parseInt(val,10)/1000).toLocaleString();
 
     self.CodecName = evt.getHeader('Channel-Read-Codec-Name') + ' + ' + evt.getHeader('Channel-Write-Codec-Name');
 
@@ -65,8 +70,8 @@ Channel.prototype.UpdateInfo = function(evt) {
     self.billing_heartbeat = self.billing_heartbeat || evt.getHeader('variable_billing_heartbeat');
 
     if (self.State === 'CS_DESTROY' && !self.isInsert) {
-        var sql = "INSERT INTO channels (UniqueID,Name,State,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr,billing_account) VALUES ('" +
-            self.UniqueID + "','" + self.Name + "','" + self.State + "','" + self.Direction + "','" + self.CodecName + "','" +
+        var sql = "INSERT INTO channels (UniqueID,Name,State,CreatedTime,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr,billing_account) VALUES ('" +
+            self.UniqueID + "','" + self.Name + "','" + self.State + "','" + self.CreatedTime + "','" + self.Direction + "','" + self.CodecName + "','" +
             self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
             self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
         db.getDB().query(sql);

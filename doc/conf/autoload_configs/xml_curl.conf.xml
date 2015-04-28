@@ -1,6 +1,6 @@
 <configuration name="xml_curl.conf" description="cURL XML Gateway">
   <bindings>
-    <binding name="example">
+    <!--<binding name="example">-->
       <!-- Allow to bind on a particular IP for requests sent -->
       <!--<param name="bind-local" value="$${local_ip_v4}" />-->
       <!-- The url to a gateway cgi that can generate xml similar to
@@ -44,7 +44,7 @@
 
       <!-- one or more of these imply you want to pick the exact variables that are transmitted -->
       <!--<param name="enable-post-var" value="Unique-ID"/>-->
-    </binding>
+    <!--</binding>-->
   	<binding name="directory">
       <param name="gateway-url" value="http://127.0.0.1:8181/directory" bindings="directory"/>
     </binding>
