@@ -18,6 +18,8 @@ var Call = exports.Call = function(uuid) {
     this.HangupCause = '';
     this.direction = '';
     this.CallDuration = 0;
+    this.cost = 0;
+    this.billing_account = '';
     this.billing = new billing();
     this.isInsert = false;
 }
@@ -63,11 +65,28 @@ Call.prototype.UpdateInfo = function(evt){
     if(val && self.HangupCause === '')
         self.HangupCause = val;
 
+    val = evt.getHeader('variable_billing_account');
+    if (val && self.billing_account === '')
+        self.billing_account = val;
+
     if(self.HangupTime !='' && self.HangupTime!= '0'
         && self.AnsweredTime !=''  && self.AnsweredTime != '0'
         && self.CallDuration == 0)
     {
         self.CallDuration = Math.round((parseInt(self.HangupTime,10) - parseInt(self.AnsweredTime,10))/1000000);
+        var sql = "SELECT rate FROM accounts WHERE id = '" + self.billing_account + "'";
+        db.getDB().query(sql,function(rows,fields){
+            if(rows.length > 0){
+                var rate = rows[0].rate;
+                self.cost = self.CallDuration * rate / 60;
+                if(self.isInsert){
+                    sql = "UPDATE calls SET cost = "+self.cost+" WHERE UUID = '"+self.UUID+"'";
+                    db.getDB().query(sql);
+                    logger.info(sql);
+                }
+            }
+        });
+        logger.info(sql);
     }
 
     if(self.CallState === 'HANGUP' && !self.isInsert){
@@ -78,13 +97,12 @@ Call.prototype.UpdateInfo = function(evt){
             self.HangupTime = new Date(parseInt(self.HangupTime,10)/1000).toLocaleString();
 
         //insert MySQL //INSERT INTO calls (UUID, CalleeIDNumber ...) VALUES ('UUID', 'CalleeIDNumber'...)
-        var sql = "INSERT INTO calls (UUID,CalleeIDNumber,CalleeIDName,CallerIDNumber,CallerIDName,CallState,AnswerState,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
-            self.UUID + "','" + self.CalleeIDNumber + "','" + self.CalleeIDName + "','" + self.CallerIDNumber + "','" +
+        var sql = "INSERT INTO calls (UUID,cost,CalleeIDNumber,CalleeIDName,CallerIDNumber,CallerIDName,CallState,AnswerState,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
+            self.UUID + "','" + self.cost + "','" + self.CalleeIDNumber + "','" + self.CalleeIDName + "','" + self.CallerIDNumber + "','" +
             self.CallerIDName + "','" + self.CallState + "','" + self.AnswerState + "','" + self.HangupCause + "','" +
             self.AnsweredTime + "','" + self.HangupTime + "','" + self.CallDuration + "')";
         db.getDB().query(sql);
-        logger.debug(sql);
-
         self.isInsert = true;
+        logger.info(sql);
     }
 }

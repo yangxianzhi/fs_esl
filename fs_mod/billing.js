@@ -29,11 +29,11 @@ billing.prototype.nibble = function(evt,call) {
         if(!self.billingrate) {
             var sql = "SELECT " + self.db_column_rate + " AS nibble_balance FROM " + self.db_table
                 + " WHERE " + self.db_column_account + " = '" + self.billingAccount + "'";
-
             db.getDB().query(sql, function (rows, fields) {
                 if(rows.length > 0)
                     self.billingrate = rows[0].nibble_balance;
             });
+            logger.info(sql);
         }
         if(self.billingrate && self.billingYes) {
             if (call.CallState && call.CallState === 'RINGING' && self.isOpenedHeartbeat == false) {

@@ -18,7 +18,7 @@ var MySQL = exports.MySQL = function(opt){
             return;
         }
 
-        logger.debug('mysql connected success! ');
+        logger.info('mysql connected success! ');
     });
 }
 

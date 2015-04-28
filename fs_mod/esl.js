@@ -6,6 +6,7 @@ var Call = require('./call').Call;
 var Channel = require('./channel').Channel;
 var logger = require("../logger").getLogger();
 var map = require('hashmap');
+var db = require('../db_mod/database');
 
 var ESL = exports.ESL = function()
 {
@@ -45,12 +46,7 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
     var self = this;
     if(self.esl_conn){
         self.esl_conn.on('esl::event::**', function(evt) {
-            /*if(!(evt.type === 'RE_SCHEDULE'
-                || evt.type === 'HEARTBEAT'
-                || evt.type === 'PRESENCE_IN'
-                || evt.type === 'CUSTOM'
-                || evt.type === 'API'))*/
-                logger.debug('Event:', evt);
+            logger.debug('Event:', evt);
             self.parseEvt(evt);
         });
 
@@ -72,7 +68,11 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
 
         self.esl_conn.on('error', function(err) {
             logger.error(err);
-            //webapp.startEslConnect();
+            //启动定时检查机制
+            self.esl_conn = null;
+            setTimeout(function(){
+                webapp.startEslConnect();
+            }, 30000);
         });
     }
 };
@@ -100,6 +100,17 @@ ESL.prototype.ListenerServerEvent = function(){
 
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
+    if(evt.type === 'CUSTOM'){
+        var status = evt.getHeader('status') || 'UnRegistered';
+        var user = evt.getHeader('username');
+        var realm = evt.getHeader('realm') || '';
+        if(user){
+            var sql = "UPDATE sip_users SET status='"+status+"', realm='"+realm+"' WHERE caller_id_number='"+user+"'";
+            db.getDB().query(sql);
+            logger.info(sql);
+        }
+        return;
+    }
     var CallUUID = evt.getHeader('variable_call_uuid');
     if(CallUUID){
         var call=null;

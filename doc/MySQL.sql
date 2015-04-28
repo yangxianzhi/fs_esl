@@ -37,6 +37,8 @@ CREATE TABLE `sip_users` (
   `caller_id_number` char(20) NOT NULL DEFAULT '' COMMENT 'sip id 号码',
   `caller_id_name` char(20) NOT NULL DEFAULT '' COMMENT 'sip id 名称,可以与号码一样，也可以是名字',
   `password` char(20) NOT NULL DEFAULT '' COMMENT 'sip注册密码',
+  `status` char(20) NOT NULL DEFAULT 'UnRegistered' COMMENT 'sip注册状态',
+  `realm` char(20) NOT NULL DEFAULT '' COMMENT 'sip注册域IP或sip服务IP',
   `billing_account` char(20) NOT NULL DEFAULT '' COMMENT '关联的计费账号，外呼计费',
   `outbound_caller_id_number` char(20) NOT NULL DEFAULT '' COMMENT '外呼显示号码',
   `binding_work_number` char(20) NOT NULL DEFAULT '' COMMENT '绑定的工号',
@@ -52,16 +54,17 @@ CREATE TABLE `sip_users` (
 DROP TABLE IF EXISTS `calls`;
 CREATE TABLE `calls` (
   `UUID` char(40) NOT NULL DEFAULT '' COMMENT '呼叫 UUID',
-  `CalleeIDNumber` char(20) NOT NULL DEFAULT '' COMMENT '被叫方号码',
-  `CalleeIDName` char(20) NOT NULL DEFAULT '' COMMENT '被叫方名称',
   `CallerIDNumber` char(20) NOT NULL DEFAULT '' COMMENT '主叫方号码',
   `CallerIDName` char(20) NOT NULL DEFAULT '' COMMENT '主叫方名称',
+  `CalleeIDNumber` char(20) NOT NULL DEFAULT '' COMMENT '被叫方号码',
+  `CalleeIDName` char(20) NOT NULL DEFAULT '' COMMENT '被叫方名称',
+  `CallDuration` int(8) NOT NULL DEFAULT '0' COMMENT '呼叫时长单位秒',
+  `cost` double precision NOT NULL DEFAULT 0 COMMENT '产生的费用',
+  `AnsweredTime` char(20) NOT NULL DEFAULT '' COMMENT '应答时间',
+  `HangupTime` char(20) NOT NULL DEFAULT '' COMMENT '挂机时间',
   `CallState` char(30) NOT NULL DEFAULT '' COMMENT '呼叫状态',
   `AnswerState` char(30) NOT NULL DEFAULT '' COMMENT '应答状态',
   `HangupCause` char(64) NOT NULL DEFAULT '' COMMENT '挂机原因',
-  `AnsweredTime` char(20) NOT NULL DEFAULT '' COMMENT '应答时间',
-  `HangupTime` char(20) NOT NULL DEFAULT '' COMMENT '挂机时间',
-  `CallDuration` int(8) NOT NULL DEFAULT '0' COMMENT '呼叫时长单位秒',
   PRIMARY KEY (`UUID`),
   UNIQUE KEY `UUID` (`UUID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -75,7 +75,7 @@ Channel.prototype.UpdateInfo = function(evt) {
             self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
             self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
         db.getDB().query(sql);
-        logger.debug(sql);
+        logger.info(sql);
 
         self.isInsert = true;
     }
