@@ -14,6 +14,7 @@ var ESL = exports.ESL = function()
     this.esl_conn = null;
     this.calls = new map();
     this.channels = new map();
+    this.sip_users_status = new map();
 }
 
 ESL.prototype.StartServer = function (opt,cb)
@@ -101,10 +102,22 @@ ESL.prototype.ListenerServerEvent = function(){
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
     if(evt.type === 'CUSTOM'){
-        var status = evt.getHeader('status') || 'UnRegistered';
         var user = evt.getHeader('username');
-        var realm = evt.getHeader('realm') || '';
         if(user){
+            var status = evt.getHeader('status') || 'UnRegistered';
+            var index = status.indexOf('(');
+            if(index != -1){
+                status = status.substr(0,index);
+            }
+            var realm = evt.getHeader('realm') || '';
+            if(self.sip_users_status.has(user)){
+                var old_status = self.sip_users_status.get(user);
+                if(old_status === status) return; //状态没有变化，不继续处理，防止频繁操作数据库。
+                self.sip_users_status.set(user,status);
+            }
+            else{
+                self.sip_users_status.set(user,status);
+            }
             var sql = "UPDATE sip_users SET status='"+status+"', realm='"+realm+"' WHERE caller_id_number='"+user+"'";
             db.getDB().query(sql);
             logger.info(sql);

@@ -66,15 +66,24 @@ FS_API.prototype.parse_directory = function (req,res){
     }
 }
 FS_API.prototype.parse_dialplan = function (req,res){
-    res.send('<document type="freeswitch/xml">\
-    <section name="dialplan" description="RE Dial Plan For FreeSwitch">\
-    <context name="custom_dialplan">\
-    <extension name="custom">\
-    <condition field="destination_number" expression="^(.*)$">\
-	<action application="transfer" data="$1 XML default"/>\
-    </condition>\
-    </extension>\
-    </context>\
-    </section>\
-    </document>')
+    var bodyText = req.body.toString();
+    if(req.body['Caller-Context'] === 'custom_dialplan'){
+        res.send('<document type="freeswitch/xml">\
+        <section name="dialplan" description="RE Dial Plan For FreeSwitch">\
+        <context name="custom_dialplan">\
+        <extension name="custom">\
+        <condition field="destination_number" expression="^(.*)$">\
+        <action application="transfer" data="$1 XML default"/>\
+        </condition>\
+        </extension>\
+        </context>\
+        </section>\
+        </document>');
+    }
+    else if(req.body['Caller-Context'] === 'default'){
+        res.send('default.xml');
+    }
+    else if(req.body['Caller-Context'] === 'public'){
+        res.send('public.xml');
+    }
 }
