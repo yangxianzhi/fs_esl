@@ -66,8 +66,8 @@ FS_API.prototype.parse_directory = function (req,res){
     }
 }
 FS_API.prototype.parse_dialplan = function (req,res){
-    var bodyText = req.body.toString();
-    if(req.body['Caller-Context'] === 'custom_dialplan'){
+    var Context = req.body['Caller-Context'];
+    if(Context === 'custom_dialplan'){
         res.send('<document type="freeswitch/xml">\
         <section name="dialplan" description="RE Dial Plan For FreeSwitch">\
         <context name="custom_dialplan">\
@@ -80,10 +80,22 @@ FS_API.prototype.parse_dialplan = function (req,res){
         </section>\
         </document>');
     }
-    else if(req.body['Caller-Context'] === 'default'){
+    else if(Context === 'default'){
         res.send('default.xml');
     }
-    else if(req.body['Caller-Context'] === 'public'){
-        res.send('public.xml');
+    else if(Context === 'public'){
+        var sip_to_host = req.body['variable_sip_to_host'];
+        var sip_to_user = req.body['variable_sip_to_user'];
+        res.send('<document type="freeswitch/xml">\
+        <section name="dialplan" description="RE Dial Plan For FreeSwitch">\
+        <context name="public">\
+        <extension name="custom_public">\
+        <condition field="destination_number" expression="^(.*)$">\
+        <action application="bridge" data="user/'+ sip_to_user + '@' + sip_to_host +'"/>\
+        </condition>\
+        </extension>\
+        </context>\
+        </section>\
+        </document>');
     }
 }
