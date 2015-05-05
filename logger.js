@@ -34,7 +34,7 @@ var log4js = function(name){
         replaceConsole: true
     });
     this.logger = log.getLogger(name);
-    this.logger.setLevel('INFO');
+    this.logger.setLevel('TRACE');
 }
 
 

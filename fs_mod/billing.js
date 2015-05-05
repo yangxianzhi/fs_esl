@@ -17,48 +17,60 @@ var billing = exports.billing = function(){
     this.billingrate = null;
     this.last_ts = null;
     this.billingYes = null;
+    this.AnsweredTime = null;
 }
 
 billing.prototype.nibble = function(evt,call) {
     var self = this;
-    //var UniqueID = evt.getHeader('Unique-ID');
-    self.billingAccount = self.billingAccount || evt.getHeader('variable_billing_account');
-    self.billingYes = self.billingYes || (evt.getHeader('variable_billing_yes') === 'true');
+    self.billingAccount = evt.getHeader('variable_billing_account');
+    self.billingYes = (evt.getHeader('variable_billing_yes') === 'true');
 
-    if(self.billingAccount){
+    var val = evt.getHeader('Caller-Channel-Answered-Time');
+    if(val && val != '0')
+        self.AnsweredTime = val;
+
+    if(self.billingAccount && self.billingYes && self.AnsweredTime){
         if(!self.billingrate) {
             var sql = "SELECT " + self.db_column_rate + " AS nibble_balance FROM " + self.db_table
                 + " WHERE " + self.db_column_account + " = '" + self.billingAccount + "'";
             db.getDB().query(sql, function (rows, fields) {
                 if(rows.length > 0)
                     self.billingrate = rows[0].nibble_balance;
+                    call.billingrate = self.billingrate;
+                    self._nibble(self,evt,call);
             });
             logger.info(sql);
         }
-        if(self.billingrate && self.billingYes) {
-            if (call.CallState && call.CallState === 'RINGING' && self.isOpenedHeartbeat == false) {
-                self.isOpenedHeartbeat = true;
-            }
+        else{
+            self._nibble(self,evt,call);
+        }
+    }
+}
 
-            if (call.AnsweredTime && call.AnsweredTime != '0' && !self.last_ts) {
-                self.last_ts = call.AnsweredTime / 1000000;
-            }
+billing.prototype._nibble = function(self,evt,call) {
+    if(self.billingrate) {
+        if (call.CallState && call.CallState === 'RINGING' && self.isOpenedHeartbeat == false) {
+            self.isOpenedHeartbeat = true;
+        }
 
-            var now = evt.getHeader( 'Event-Date-Timestamp');
-            if(!now){
-                now = new Date().getTime() / 1000;
-            }
-            else
-                now = now / 1000000;
+        if (call.AnsweredTime && call.AnsweredTime != '0' && !self.last_ts) {
+            self.last_ts = call.AnsweredTime / 1000000;
+        }
 
-            if(self.last_ts ){
-                var billing_amount = (now - self.last_ts) * (self.billingrate / 60);
-                self.last_ts = now;
-                var sql = "UPDATE " + self.db_table + " SET " + self.db_column_cash + "=" +  self.db_column_cash
-                    + "-" + billing_amount + " WHERE " +self.db_column_account+ " ='" + self.billingAccount + "'";
-                db.getDB().query(sql)
-                logger.info(sql);
-            }
+        var now = evt.getHeader( 'Event-Date-Timestamp');
+        if(!now){
+            now = new Date().getTime() / 1000;
+        }
+        else
+            now = now / 1000000;
+
+        if(self.last_ts ){
+            var billing_amount = (now - self.last_ts) * (self.billingrate / 60);
+            self.last_ts = now;
+            var sql = "UPDATE " + self.db_table + " SET " + self.db_column_cash + "=" +  self.db_column_cash
+                + "-" + billing_amount + " WHERE " +self.db_column_account+ " ='" + self.billingAccount + "'";
+            db.getDB().query(sql)
+            logger.info(sql);
         }
     }
 }

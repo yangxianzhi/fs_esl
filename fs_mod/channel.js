@@ -3,11 +3,12 @@
  */
 var db = require('../db_mod/database');
 var logger = require("../logger").getLogger();
+var billing = require('./billing').billing;
 
 var Channel = exports.Channel = function(UniqueID){
     this.UniqueID = UniqueID;
     this.Name = '';
-    this.State = '';
+    this.HangupCause = '';
     this.CreatedTime = '';
     this.Direction = '';
     this.CodecName = '';
@@ -19,15 +20,16 @@ var Channel = exports.Channel = function(UniqueID){
     this.billing_account = '';
     this.billing_heartbeat = null;
     this.isInsert = false;
+    this.billing = new billing();
 }
 
-Channel.prototype.UpdateInfo = function(evt) {
+Channel.prototype.UpdateInfo = function(evt,call) {
     var self = this;
+    self.billing.nibble(evt,call);
 
-    var val = evt.getHeader('Channel-State');
-    //if (val === self.State) return;
+    var val = evt.getHeader('Hangup-Cause');
     if (val)
-        self.State = val;
+        self.HangupCause = val;
 
     val = evt.getHeader('Channel-Name');
     if (val && self.Name === '')
@@ -69,9 +71,12 @@ Channel.prototype.UpdateInfo = function(evt) {
 
     self.billing_heartbeat = self.billing_heartbeat || evt.getHeader('variable_billing_heartbeat');
 
-    if (self.State === 'CS_DESTROY' && !self.isInsert) {
-        var sql = "INSERT INTO channels (UniqueID,Name,State,CreatedTime,Direction,CodecName,CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr,billing_account) VALUES ('" +
-            self.UniqueID + "','" + self.Name + "','" + self.State + "','" + self.CreatedTime + "','" + self.Direction + "','" + self.CodecName + "','" +
+    if (evt.type === 'CHANNEL_HANGUP' && !self.isInsert) {
+        var sql = "INSERT INTO channels (UniqueID,Name,HangupCause,CreatedTime,Direction,CodecName," +
+            "CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName," +
+            "OtherLegNetworkAddr,billing_account) VALUES ('" +
+            self.UniqueID + "','" + self.Name + "','" + self.HangupCause + "','" + self.CreatedTime + "','"
+            + self.Direction + "','" + self.CodecName + "','" +
             self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
             self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
         db.getDB().query(sql);

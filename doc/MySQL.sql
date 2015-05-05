@@ -55,15 +55,11 @@ DROP TABLE IF EXISTS `calls`;
 CREATE TABLE `calls` (
   `UUID` char(40) NOT NULL DEFAULT '' COMMENT '呼叫 UUID',
   `CallerIDNumber` char(20) NOT NULL DEFAULT '' COMMENT '主叫方号码',
-  `CallerIDName` char(20) NOT NULL DEFAULT '' COMMENT '主叫方名称',
   `CalleeIDNumber` char(20) NOT NULL DEFAULT '' COMMENT '被叫方号码',
-  `CalleeIDName` char(20) NOT NULL DEFAULT '' COMMENT '被叫方名称',
   `CallDuration` int(8) NOT NULL DEFAULT '0' COMMENT '呼叫时长单位秒',
   `cost` double precision NOT NULL DEFAULT 0 COMMENT '产生的费用',
   `AnsweredTime` char(20) NOT NULL DEFAULT '' COMMENT '应答时间',
   `HangupTime` char(20) NOT NULL DEFAULT '' COMMENT '挂机时间',
-  `CallState` char(30) NOT NULL DEFAULT '' COMMENT '呼叫状态',
-  `AnswerState` char(30) NOT NULL DEFAULT '' COMMENT '应答状态',
   `HangupCause` char(64) NOT NULL DEFAULT '' COMMENT '挂机原因',
   PRIMARY KEY (`UUID`),
   UNIQUE KEY `UUID` (`UUID`)
@@ -77,8 +73,10 @@ DROP TABLE IF EXISTS `channels`;
 CREATE TABLE `channels` (
   `UniqueID` char(40) NOT NULL DEFAULT '' COMMENT '通道 UniqueID',
   `Name` char(64) NOT NULL DEFAULT '' COMMENT '通道名称',
-  `State` char(20) NOT NULL DEFAULT '' COMMENT '通道状态',
+  `HangupCause` char(20) NOT NULL DEFAULT '' COMMENT '挂机原因',
   `CreatedTime` char(20) NOT NULL DEFAULT '' COMMENT '通道创建时间',
+  `CallerIDName` char(20) NOT NULL DEFAULT '' COMMENT '主叫方名称',
+  `CalleeIDName` char(20) NOT NULL DEFAULT '' COMMENT '被叫方名称',
   `Direction` char(10) NOT NULL DEFAULT '' COMMENT '通道方向',
   `CodecName` char(16) NOT NULL DEFAULT '' COMMENT '通道编码 （读 + 写）编码',
   `CallerNetworkAddr` char(16) NOT NULL DEFAULT '' COMMENT '通道IP',
