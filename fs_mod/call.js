@@ -2,7 +2,7 @@
  * Created by qqtech on 2015/4/17.
  */
 var db = require('../db_mod/database');
-var logger = require("../logger").getLogger();
+var logger = require("../logger").getLogger('Call','INFO');
 var Channel = require('./channel').Channel;
 var map = require('hashmap');
 
@@ -101,6 +101,5 @@ Call.prototype.UpdateInfo = function(evt){
             self.HangupCause + "','" + self.AnsweredTime + "','" + self.HangupTime + "','" + self.CallDuration + "')";
         db.getDB().query(sql);
         self.isInsert = true;
-        logger.info(sql);
     }
 }

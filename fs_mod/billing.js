@@ -4,13 +4,13 @@
 
 var db = require('../db_mod/database');
 var map = require('hashmap');
-var logger = require('../logger').getLogger();
+var logger = require('../logger').getLogger('billing','INFO');
 
 var billing = exports.billing = function(){
-    this.db_column_account = 'id';
+    this.db_column_account = 'ID';
     this.db_column_cash = 'cash';
     this.db_column_rate = 'rate';
-    this.db_table = 'accounts';
+    this.db_table = 'ACCOUNT';
     this.cash = null;
     this.isOpenedHeartbeat = false;
     this.billingAccount = null;
@@ -39,7 +39,6 @@ billing.prototype.nibble = function(evt,call) {
                     call.billingrate = self.billingrate;
                     self._nibble(self,evt,call);
             });
-            logger.info(sql);
         }
         else{
             self._nibble(self,evt,call);
@@ -70,7 +69,6 @@ billing.prototype._nibble = function(self,evt,call) {
             var sql = "UPDATE " + self.db_table + " SET " + self.db_column_cash + "=" +  self.db_column_cash
                 + "-" + billing_amount + " WHERE " +self.db_column_account+ " ='" + self.billingAccount + "'";
             db.getDB().query(sql)
-            logger.info(sql);
         }
     }
 }

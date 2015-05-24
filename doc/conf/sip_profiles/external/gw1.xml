@@ -3,7 +3,7 @@
   <!--/// account username *required* ///-->
   <param name="username" value="cluecon"/>
   <!--/// auth realm: *optional* same as gateway name, if blank ///-->
-  <param name="realm" value="192.168.1.38:5060"/>
+  <param name="realm" value="124.193.171.212:6020"/>
   <!--/// username to use in from: *optional* same as  username, if blank ///-->
   <!--<param name="from-user" value="cluecon"/>-->
   <!--/// domain to use in from: *optional* same as  realm, if blank ///-->

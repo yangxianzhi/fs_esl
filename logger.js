@@ -14,7 +14,7 @@
 
 var log = require('log4js');
 
-var log4js = function(name){
+var log4js = function(category,logLevel){
 //日志配置
     log.configure({
         appenders: [
@@ -27,14 +27,14 @@ var log4js = function(name){
                 pattern: "-yyyy-MM-dd.bak",
                 maxLogSize: 51200,
                 alwaysIncludePattern: false,
-                backups: 60,
-                category: 'logger'
+                backups: 60//,
+                //category: 'logger'
             }
         ],
         replaceConsole: true
     });
-    this.logger = log.getLogger(name);
-    this.logger.setLevel('TRACE');
+    this.logger = log.getLogger(category);
+    this.logger.setLevel(logLevel);
 }
 
 
@@ -43,7 +43,9 @@ log4js.prototype.getLogger = function(){
     return sef.logger;
 };
 
-exports.getLogger = function(){
-    var log = new log4js('logger');
+exports.getLogger = function(category,logLevel){
+    var ca = category || 'logger';
+    var lo = logLevel || 'INFO';
+    var log = new log4js(ca, lo);
     return log.getLogger();
 }

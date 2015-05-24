@@ -9,7 +9,7 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var req_esl = require('./routes/req_esl');
 
-var log = require("./logger").getLogger();
+var log = require("./logger").getLogger('app');
 
 var app = express();
 

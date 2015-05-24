@@ -2,7 +2,7 @@
  * Created by grassman on 14-3-19.
  */
 var mysql = require("mysql");
-var logger = require("../logger").getLogger();
+var logger = require("../logger").getLogger('MySQL');
 
 var MySQL = exports.MySQL = function(opt){
     opt = opt || {
@@ -23,12 +23,12 @@ var MySQL = exports.MySQL = function(opt){
 }
 
 MySQL.prototype.query = function (sql,cb) {
+    logger.info(sql);
     this.connection.query(sql, function(err, rows, fields) {
         if (err) {
             logger.error('error query: ' + err);
             return;
         }
-
         if(cb)
             cb(rows,fields);
     });

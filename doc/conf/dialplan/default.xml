@@ -16,7 +16,7 @@
     <extension name="unloop">
       <condition field="${unroll_loops}" expression="^true$"/>
       <condition field="${sip_looped_call}" expression="^true$">
-	<action application="deflect" data="${destination_number}"/>
+				<action application="deflect" data="${destination_number}"/>
       </condition>
     </extension>
 
@@ -40,7 +40,7 @@
     -->
     <extension name="tod_example" continue="true">
       <condition wday="2-6" hour="9-18">
-	<action application="set" data="open=true"/>
+				<action application="set" data="open=true"/>
       </condition>
     </extension>
 
@@ -751,9 +751,7 @@
     </extension>
     
     <extension name="outbound">
-	  	<condition field="destination_number" expression="^9(\d+)$">
-		    <action application="set" data="billing_yes=true"/>
-		    <action application="set" data="billing_heartbeat=60"/>
+	  	<condition field="destination_number" expression="^9(.*)$">
 		    <action application="bridge" data="sofia/gateway/gw1/$1"/>
 	  	</condition>
 		</extension>

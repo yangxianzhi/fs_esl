@@ -2,7 +2,7 @@
  * Created by yangxz on 15-4-18.
  */
 var db = require('../db_mod/database');
-var logger = require("../logger").getLogger();
+var logger = require("../logger").getLogger('Channel');
 var billing = require('./billing').billing;
 
 var Channel = exports.Channel = function(UniqueID){
@@ -80,7 +80,6 @@ Channel.prototype.UpdateInfo = function(evt,call) {
             self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
             self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
         db.getDB().query(sql);
-        logger.info(sql);
 
         self.isInsert = true;
     }

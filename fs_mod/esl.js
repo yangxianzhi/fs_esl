@@ -3,7 +3,7 @@
  */
 var mod_esl = require('modesl');
 var Call = require('./call').Call;
-var logger = require("../logger").getLogger();
+var logger = require("../logger").getLogger('ConnEvent','INFO');
 var map = require('hashmap');
 var db = require('../db_mod/database');
 
@@ -118,7 +118,6 @@ ESL.prototype.parseEvt = function(evt) {
             }
             var sql = "UPDATE sip_users SET status='"+status+"', realm='"+realm+"' WHERE caller_id_number='"+user+"'";
             db.getDB().query(sql);
-            logger.info(sql);
         }
         return;
     }

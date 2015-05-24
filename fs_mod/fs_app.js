@@ -1,7 +1,7 @@
 /**
  * Created by qqtech on 2015/4/14.
  */
-var logger = require("../logger").getLogger();
+var logger = require("../logger").getLogger('FS_API');
 var db = require('../db_mod/database');
 var map = require('hashmap');
 
@@ -90,8 +90,77 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 '<action application="transfer" data="$1 XML default"/>\
                 </condition>\
                 </extension>';
-        var sip_to_user = req.body['variable_sip_to_user'];
-        if(sip_to_user[0] === '9'){
+        var sip_to_user = req.body['Hunt-Destination-Number'];
+        if(sip_to_user === '0000'){
+            //工号绑定IVR
+            var xml = '<extension name="ivr_demo">\
+                <condition field="destination_number" expression="^(.*)$">\
+                <action application="answer"/>\
+                <action application="sleep" data="1000"/>\
+                <action application="set" data="custom_welcome=10000"/>\
+                <action application="ivr" data="custom_binding_ivr"/>\
+                </condition>\
+                </extension>';
+            res.send(self.xml_start + xml + self.xml_end);
+        }
+        else if(sip_to_user.indexOf('binding_') == 0){
+            var caller_id = req.body['Caller-Caller-ID-Number'];
+            var number = sip_to_user.substr(sip_to_user.indexOf('_')+1);
+            var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
+            db.getDB().query(sql,function(){
+                var xml = '<extension name="binding_demo">\
+                <condition field="destination_number" expression="^(.*)$">\
+                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                <action application="hangup"/>\
+                </condition>\
+                </extension>';
+                res.send(self.xml_start + xml + self.xml_end);
+            });
+        }
+        else if(sip_to_user === 'query_binding'){
+            var caller_id = req.body['Caller-Caller-ID-Number'];
+            var sql = "SELECT binding_work_number " +
+                "FROM sip_users WHERE caller_id_number = '"+caller_id+"'";
+            db.getDB().query(sql,function(rows,fields){
+                var xml1 = '<extension name="query_binding_demo">\
+                        <condition field="destination_number" expression="^(.*)$">';
+                 var xml2 = ' <action application="ivr" data="custom_binding_ivr"/>\
+                        </condition>\
+                        </extension>';
+                var xml = '';
+                if(rows.length > 0) {
+                    xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_dinded.wav"/>';
+                    var id = rows[0].binding_work_number;
+                    if(id != ''){
+                        for(var i in id){
+                            xml = xml + '<action application="playback" data="$${base_dir}/sounds/custom_ivr/number/'+ id[i] +'.wav"/>';
+                        }
+                    }
+                    else{
+                        xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
+                    }
+                }
+                else{
+                    xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
+                }
+                xml = xml1 + xml + xml2;
+                res.send(self.xml_start + xml + self.xml_end);
+            });
+        }
+        else if(sip_to_user === 'cancel_binding'){
+            var caller_id = req.body['Caller-Caller-ID-Number'];
+            var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
+            db.getDB().query(sql,function(){
+                var xml = '<extension name="cancel_binding_demo">\
+                <condition field="destination_number" expression="^(.*)$">\
+                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                <action application="hangup"/>\
+                </condition>\
+                </extension>';
+                res.send(self.xml_start + xml + self.xml_end);
+            });
+        }
+        else if(sip_to_user[0] === '9'){
             //内线打外线要计费
             //billing_yes=true 说明要计费
             //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
@@ -99,6 +168,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
             var sql = "Select billing_account as account from sip_users where caller_id_number ='" + sip_from_user + "'";
             db.getDB().query(sql,function(rows,fields){
                 if(rows.length > 0){
+                    self.xml_record = self.xml_record.replace('archive',rows[0].account);
                     var xml = '<extension name="custom_outbount">\
                     <condition field="destination_number" expression="^9(.*)$">'
                     + self.xml_record +
@@ -171,6 +241,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
     var resonance = rows[0].resonance;
     var realm = rows[0].realm;
     var account = rows[0].billing_account;
+    self.xml_record = self.xml_record.replace('archive',account);
     var xml = '<extension name="custom_dialplan_res0">\
             <condition field="destination_number" expression="^(.*)$">'
             + self.xml_record +
