@@ -100,7 +100,7 @@ ESL.prototype.ListenerServerEvent = function(){
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
     if(evt.type === 'CUSTOM'){
-        var user = evt.getHeader('username');
+        var user = evt.getHeader('from-user');
         if(user){
             var status = evt.getHeader('status') || 'UnRegistered';
             var index = status.indexOf('(');

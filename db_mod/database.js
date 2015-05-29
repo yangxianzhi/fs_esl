@@ -9,7 +9,6 @@ var db = null;
 function getDataBase(){
     if(db == null)
         db = new MySQL(config.mysql);
-
     return db;
 }
 

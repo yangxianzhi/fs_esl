@@ -1,11 +1,33 @@
 <include>
   <!-- demo IVR setup -->
   <!-- demo IVR, Main Menu -->
+  <menu name="custom_welcome_ivr"
+      greet-long="$${base_dir}/sounds/custom_ivr/welcome.wav"
+      greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"
+      invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"
+      exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"
+      confirm-macro=""
+      confirm-key=""
+      tts-engine="flite"
+      tts-voice="rms"
+      confirm-attempts="3"
+      timeout="10000"
+      digit-len="4"
+      max-failures="3"
+      max-timeouts="3">
+
+    <!-- The following are the definitions for the digits the user dials -->
+    <!-- Digit 1 transfer caller to the public FreeSWITCH conference -->
+    <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>
+	<entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/> 
+  </menu>
+ 
+  <!--工号绑定IVR--> 
   <menu name="custom_binding_ivr"
       greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"
       greet-short="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"
-      invalid-sound="ivr/ivr-that_was_an_invalid_entry.wav"
-      exit-sound="voicemail/vm-goodbye.wav"
+      invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"
+      exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"
       confirm-macro=""
       confirm-key=""
       tts-engine="flite"
@@ -22,12 +44,12 @@
     <entry action="menu-exec-app" digits="3" param="transfer cancel_binding XML custom_dialplan"/>    
   </menu>
 
-  <!-- Demo IVR, Sub Menu -->
+  <!-- 工号绑定IVR, Sub Menu -->
  <menu name="binding_sub_ivr"
       greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
       greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
-      invalid-sound="ivr/ivr-that_was_an_invalid_entry.wav"
-      exit-sound="voicemail/vm-goodbye.wav"
+      invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"
+      exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"
       timeout="10000"
       max-failures="3"
       max-timeouts="3"
@@ -39,12 +61,12 @@
     <entry action="menu-top" digits="*"/>
  </menu>
 
-  <!-- Demo IVR, Sub Menu -->
+  <!-- 工号绑定IVR, Sub Menu -->
  <menu name="query_sub_ivr"
       greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
       greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
-      invalid-sound="ivr/ivr-that_was_an_invalid_entry.wav"
-      exit-sound="voicemail/vm-goodbye.wav"
+      invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"
+      exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"
       timeout="15000"
       max-failures="3"
       max-timeouts="3">
@@ -53,12 +75,12 @@
    <entry action="menu-top" digits="*"/>
  </menu>
 
-  <!-- Demo IVR, Sub Menu -->
+  <!-- 工号绑定IVR, Sub Menu -->
  <menu name="cancel_sub_ivr"
       greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
       greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"
-      invalid-sound="ivr/ivr-that_was_an_invalid_entry.wav"
-      exit-sound="voicemail/vm-goodbye.wav"
+      invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"
+      exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"
       timeout="15000"
       max-failures="3"
       max-timeouts="3">
@@ -67,20 +89,4 @@
    <entry action="menu-top" digits="*"/>
  </menu>
 
-
-<!-- TTS sample; non-functional but it demonstrates say: and TTS -->
-<!--
-  <menu name="demo3"
-      greet-long="say:Press 1 to join the conference, Press 2 to join the other conference"
-      greet-short="say:Press 1 to join the conference, Press 2 to join the other conference"
-      invalid-sound="say:invalid extension"
-      exit-sound="say:exit sound"
-      timeout ="15000"
-      max-failures="3">
-    <entry action="menu-exit" digits="*"/>
-    <entry action="menu-play-sound" digits="1" param="say:You pressed 1"/>
-    <entry action="menu-exec-app" digits="2" param="transfert 1000 XML default"/>
-    <entry action="menu-exec-app" digits="3" param="transfert 1001 XML default"/>
-  </menu>
--->
 </include>

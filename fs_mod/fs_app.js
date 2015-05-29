@@ -87,7 +87,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
         self.xml_default = '<extension name="custom_default">\
                 <condition field="destination_number" expression="^(.*)$">'
                 + self.xml_record +
-                '<action application="transfer" data="$1 XML default"/>\
+                '<action application="transfer" data="8888 XML custom_dialplan"/>\
                 </condition>\
                 </extension>';
         var sip_to_user = req.body['Hunt-Destination-Number'];
@@ -97,11 +97,34 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 <condition field="destination_number" expression="^(.*)$">\
                 <action application="answer"/>\
                 <action application="sleep" data="1000"/>\
-                <action application="set" data="custom_welcome=10000"/>\
                 <action application="ivr" data="custom_binding_ivr"/>\
                 </condition>\
                 </extension>';
             res.send(self.xml_start + xml + self.xml_end);
+        }
+        else if(sip_to_user === '8888'){
+            //欢迎语IVR
+            var xml = '<extension name="ivr_demo">\
+                <condition field="destination_number" expression="^(.*)$">\
+                <action application="answer"/>\
+                <action application="sleep" data="1000"/>\
+                <action application="ivr" data="custom_welcome_ivr"/>\
+                </condition>\
+                </extension>';
+            res.send(self.xml_start + xml + self.xml_end);
+        }
+        else if(sip_to_user === 'welcome'){
+            var sip_from_user = req.body['Hunt-Orig-Caller-ID-Number'];
+            var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";
+            db.getDB().query(sql,function(rows,fileds){
+                if(rows.length > 0){
+                    self._dialplan_res(rows,res);
+                }
+                else{
+                    res.send(self.xml_start + self.xml_default + self.xml_end);
+                }
+            });
         }
         else if(sip_to_user.indexOf('binding_') == 0){
             var caller_id = req.body['Caller-Caller-ID-Number'];
