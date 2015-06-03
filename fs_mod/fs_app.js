@@ -183,6 +183,15 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 res.send(self.xml_start + xml + self.xml_end);
             });
         }
+        else if(sip_to_user === '9196'){
+            var xml = '<extension name="echo">\
+                <condition field="destination_number" expression="^9196$">\
+                <action application="answer"/>\
+                <action application="echo"/>\
+                </condition>\
+                </extension>';
+            res.send(self.xml_start + xml + self.xml_end);
+        }
         else if(sip_to_user[0] === '9'){
             //内线打外线要计费
             //billing_yes=true 说明要计费

@@ -68,10 +68,10 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
         self.esl_conn.on('error', function(err) {
             logger.error('error:', err);
             //启动定时检查机制
-            self.esl_conn = null;
-            setTimeout(function(){
-                webapp.startEslConnect();
-            }, 30000);
+            //self.esl_conn = null;
+            //setTimeout(function(){
+            //    webapp.startEslConnect();
+            //}, 30000);
         });
     }
 };
