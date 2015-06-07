@@ -24,11 +24,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="esl.js" pinned="false" current-in-tab="false">
+      <file leaf-file-name="esl.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/fs_mod/esl.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="1017" max-vertical-offset="2664">
-              <caret line="67" column="28" selection-start-line="67" selection-start-column="28" selection-end-line="67" selection-end-column="28" />
+            <state vertical-scroll-proportion="-0.8279387" vertical-offset="972" max-vertical-offset="2664">
+              <caret line="27" column="27" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
               <folding>
                 <element signature="e#2025#2035#0" expanded="false" />
               </folding>
@@ -36,10 +36,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="fs_app.js" pinned="false" current-in-tab="true">
+      <file leaf-file-name="fs_app.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/fs_mod/fs_app.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="4.0102215" vertical-offset="1102" max-vertical-offset="5526">
+            <state vertical-scroll-proportion="0.0" vertical-offset="1102" max-vertical-offset="5526">
               <caret line="192" column="27" selection-start-line="192" selection-start-column="27" selection-end-line="192" selection-end-column="27" />
               <folding>
                 <marker date="1433337586046" expanded="true" signature="913:1005" placeholder="..." />
@@ -332,6 +332,9 @@
     <property name="editorconfig.notification" value="Applied .editorconfig settings" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="FullScreen" value="false" />
+    <property name="options.lastSelected" value="configurable.group.appearance" />
+    <property name="options.splitter.main.proportions" value="0.3" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -962,16 +965,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/fs_mod/esl.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1017" max-vertical-offset="2664">
-          <caret line="67" column="28" selection-start-line="67" selection-start-column="28" selection-end-line="67" selection-end-column="28" />
-          <folding>
-            <element signature="e#2025#2035#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/bin/www">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="144" max-vertical-offset="1728">
@@ -982,7 +975,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/fs_mod/fs_app.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="4.0102215" vertical-offset="1102" max-vertical-offset="5526">
+        <state vertical-scroll-proportion="0.0" vertical-offset="1102" max-vertical-offset="5526">
           <caret line="192" column="27" selection-start-line="192" selection-start-column="27" selection-end-line="192" selection-end-column="27" />
           <folding>
             <marker date="1433337586046" expanded="true" signature="913:1005" placeholder="..." />
@@ -1019,6 +1012,16 @@
             <marker date="1433337586046" expanded="true" signature="13658:13730" placeholder="..." />
             <marker date="1433337586046" expanded="true" signature="13979:14051" placeholder="..." />
             <marker date="1433337586046" expanded="true" signature="14410:14482" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fs_mod/esl.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-0.8279387" vertical-offset="972" max-vertical-offset="2664">
+          <caret line="27" column="27" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
+          <folding>
+            <element signature="e#2025#2035#0" expanded="false" />
           </folding>
         </state>
       </provider>
