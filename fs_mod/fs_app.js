@@ -277,7 +277,11 @@ FS_API.prototype._dialplan_res = function (rows, res){
     var xml = '<extension name="custom_dialplan_res0">\
             <condition field="destination_number" expression="^(.*)$">'
             + self.xml_record +
-            '<action application="bridge" data="user/'+ user + '@' + realm +'"/>\
+            '<action application="set" data="continue_on_fail=true"/>\
+            <action application="export" data="dialed_extension=$1"/>\
+            <action application="bridge" data="user/'+ user + '@' + realm +'"/>\
+            <action application="answer"/>\
+            <action application="bridge" data="loopback/app=voicemail:zhizhi ${domain_name} ${dialed_extension}"/>\
             </condition>\
             </extension>';
     if(resonance == '1'){

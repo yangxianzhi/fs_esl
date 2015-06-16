@@ -6,6 +6,8 @@ var Call = require('./call').Call;
 var logger = require("../logger").getLogger('ConnEvent','INFO');
 var map = require('hashmap');
 var db = require('../db_mod/database');
+var exec_cmd = require('./exec_shell').exec_cmd;
+var EventEmitter = require('events').EventEmitter;
 
 var ESL = exports.ESL = function()
 {
@@ -13,6 +15,7 @@ var ESL = exports.ESL = function()
     this.esl_conn = null;
     this.calls = new map();
     this.sip_users_status = new map();
+    this.event = new EventEmitter();
 }
 
 ESL.prototype.StartServer = function (opt,cb)
@@ -67,14 +70,37 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
 
         self.esl_conn.on('error', function(err) {
             logger.error('error:', err);
+            //http服务接口会影响FreeSWITCH的启动过程，所以停止HTTP
+            //FreeSWITCH启动会请求HTTP接口，导致FreeSWITCH的启动变慢。
+            webapp.stopHttpServer(function(){
+                logger.info('httpServer closed');
+            });
             //启动定时检查机制
-            //self.esl_conn = null;
-            //setTimeout(function(){
-            //    webapp.startEslConnect();
-            //}, 30000);
+            self.event.on('checkFreeSWITCH',self.checkFreeSWITCH);
+            setTimeout(function(){
+                self.checkFreeSWITCH(webapp,self);
+            }, 5000);
         });
     }
 };
+
+ESL.prototype.checkFreeSWITCH = function(webapp,self){
+    exec_cmd('fs_cli -x status',function(error,stdout,stderr){
+        if(error){
+            //logger.error('error:', error);
+            setTimeout(function(){
+                self.event.emit('checkFreeSWITCH',webapp,self);
+            }, 5000);
+            return;
+        }
+
+        //logger.info('stdout:', stdout);
+        self.event.removeListener('checkFreeSWITCH',self.checkFreeSWITCH);
+        self.esl_conn = null;
+        webapp.startEslConnect();
+        setTimeout(webapp.startHttpServer(),2000);
+    })
+}
 
 ESL.prototype.ListenerServerEvent = function(){
     var self = this;
@@ -107,7 +133,7 @@ ESL.prototype.parseEvt = function(evt) {
             if(index != -1){
                 status = status.substr(0,index);
             }
-            var realm = evt.getHeader('realm') || '';
+            var realm = evt.getHeader('to-host') || '';
             if(self.sip_users_status.has(user)){
                 var old_status = self.sip_users_status.get(user);
                 if(old_status === status) return; //状态没有变化，不继续处理，防止频繁操作数据库。

@@ -17,7 +17,7 @@
     "myevents":true
   },
   "mysql":{
-    "host": "124.193.171.212",
+    "host": "111.203.235.200",
     "port": 3306,
     "user": "root",
     "password": "000000",

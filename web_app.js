@@ -40,6 +40,7 @@ WebApp.prototype._init = function() {
     //self.app.get('/', function(req, res) {
     //   res.render('index.html');
     //});
+    if(!self.io) return;
     self.io.on('connection', function(socket) {
         socket.on('setup', function(num, fn) {
             if(num.length === 10) num = '1' + num.toString();
@@ -74,8 +75,13 @@ WebApp.prototype.start = function() {
 
 WebApp.prototype.startHttpServer = function(){
     var self = this;
-    var server = self.app.StartListen(self.port, self.host);
-    self.io = sio.listen(server);
+    self.httpServer = self.app.StartListen(self.port, self.host);
+    //self.io = sio.listen(self.httpServer);
+}
+
+WebApp.prototype.stopHttpServer = function(cb){
+    var self = this;
+    self.httpServer.close(cb);
 }
 
 WebApp.prototype.startEslConnect = function(){
@@ -83,7 +89,7 @@ WebApp.prototype.startEslConnect = function(){
     //connect to freeswitch
     self.fsw = esl.StartConnect(self.config.fsw, function() {
         //self._configure();
-        self._init();
+        //self._init();
     });
     esl.ListenerConnectEvent(self);
 }

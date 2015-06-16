@@ -13,6 +13,13 @@
  */
 
 var log = require('log4js');
+var os = require('os');
+
+function isWindow(){
+    if(os.type().indexOf('Windows') == 0)
+        return true;
+    return false;
+}
 
 var log4js = function(category,logLevel){
 //日志配置
@@ -23,7 +30,7 @@ var log4js = function(category,logLevel){
             },
             {
                 type: 'dateFile',
-                filename: 'logs/fs_esl.log',
+                filename: isWindow() ? './logs/fs_esl.log' : '/var/log/fs_esl.log',
                 pattern: "-yyyy-MM-dd.bak",
                 maxLogSize: 51200,
                 alwaysIncludePattern: false,
