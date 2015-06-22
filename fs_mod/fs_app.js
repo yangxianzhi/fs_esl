@@ -1,68 +1,95 @@
 /**
  * Created by qqtech on 2015/4/14.
  */
-var logger = require("../logger").getLogger('FS_API');
+var logger = require("../logger").getLogger('FS_API','INFO');
 var db = require('../db_mod/database');
 var map = require('hashmap');
+var EventEmitter = require('events').EventEmitter;
 
 var FS_API = exports.FS_API = function(){
     this.sipusers = new map();
+    this.event = new EventEmitter();
+    this.event.on('checkConfigUpdate',this.checkConfigUpdate);
+    setTimeout(this.checkConfigUpdate, 10 * 60 * 1000, this);
 }
+FS_API.prototype.checkConfigUpdate = function (self){
+    self.sipusers.forEach(function(value, key){
+        var sql = "SELECT a.hotlineNO as ANI, s.billing_account as account, " +
+            "s.caller_id_number as user, s.caller_id_name as name, s.password " +
+            "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account " +
+            "WHERE s.caller_id_number = '" + key + "'";
+        db.getDB().query(sql, function(rows, fields){
+            if(rows.length > 0){
+                self.sipusers.set(rows[0].user,rows[0]);
+            }
+        });
+    });
 
+    setTimeout(function(){
+        self.event.emit('checkConfigUpdate',self);
+    },10 * 60 * 1000);
+    logger.info('checkConfigUpdate called!!');
+}
 FS_API.prototype.parse_directory = function (req,res){
     var self = this;
     if(req && req.body){
-        if(self.sipusers.has(req.body.user)){
-            var xml = self.sipusers.get(req.body.user);
-            res.send(xml);
+     if(self.sipusers.has(req.body.user)){
+            var row = self.sipusers.get(req.body.user);
+            self.res_regist(row,req,res);
         }
         else{
-            var sql = "Select caller_id_number as user, caller_id_name as name," +
+            /*var sql = "Select caller_id_number as user, caller_id_name as name," +
                 "password, billing_account as account, outbound_caller_id_number as ANI" +
-                " from sip_users where caller_id_number ='" + req.body.user + "'";
+                " from sip_users where caller_id_number ='" + req.body.user + "'";*/
+            var sql = "SELECT a.hotlineNO as ANI, s.billing_account as account, " +
+                "s.caller_id_number as user, s.caller_id_name as name, s.password " +
+                "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account " +
+                "WHERE s.caller_id_number = '" + req.body.user + "'";
             db.getDB().query(sql, function(rows, fields){
                 if(rows.length > 0){
-                    var xml = '<document type="freeswitch/xml">\
-                        <section name="directory">\
-                        <domain name="' + req.body.domain + '">\
-                        <params>\
-                            <param name="dial-string" value="{presence_id=${dialed_user}@${dialed_domain}}${sofia_contact(${dialed_user}@${dialed_domain})}"/>\
-                        </params>\
-                        <groups>\
-                        <group name="default">\
-                        <users>\
-                        <user id="' + rows[0].user + '">\
-                        <params>\
-                        <param name="password" value="' + rows[0].password + '"/>\
-                        <param name="vm-password" value="' + req.body.user + '"/>\
-                        </params>\
-                        <variables>\
-                        <variable name="toll_allow" value="domestic,international,local"/>\
-                        <variable name="accountcode" value="' + rows[0].user + '"/>\
-                        <variable name="user_context" value="custom_dialplan"/>\
-                        <variable name="effective_caller_id_name" value="' + rows[0].name + '"/>\
-                        <variable name="effective_caller_id_number" value="' + rows[0].user + '"/>\
-                        <variable name="outbound_caller_id_name" value="' + rows[0].ANI + '"/>\
-                        <variable name="outbound_caller_id_number" value="' + rows[0].ANI + '"/>\
-                        <variable name="callgroup" value="default"/>\
-                        <variable name="sip-force-contact" value="NDLB-connectile-dysfunction"/>\
-                        <variable name="x-powered-by" value="http://www.freeswitch.org.cn"/>\
-                        </variables>\
-                        </user>\
-                        </users>\
-                        </group>\
-                        </groups>\
-                        </domain>\
-                        </section>\
-                        </document>\
-                    ';
-                    //<variable name="billing_account" value="' + rows[0].account + '"/>\
-                    res.send(xml);
-                    self.sipusers.set(rows[0].user,xml);
+                    self.sipusers.set(rows[0].user,rows[0]);
+                    self.res_regist(rows[0],req,res);
                 }
             });
         }
     }
+}
+FS_API.prototype.res_regist = function(row, req, res){
+    var xml = '<document type="freeswitch/xml">\
+    <section name="directory">\
+    <domain name="' + req.body.domain + '">\
+    <params>\
+    <param name="dial-string" value="{presence_id=${dialed_user}@${dialed_domain}}${sofia_contact(${dialed_user}@${dialed_domain})}"/>\
+    </params>\
+    <groups>\
+    <group name="default">\
+    <users>\
+    <user id="' + row.user + '">\
+    <params>\
+    <param name="password" value="' + row.password + '"/>\
+    <param name="vm-password" value="' + req.body.user + '"/>\
+    </params>\
+    <variables>\
+    <variable name="toll_allow" value="domestic,international,local"/>\
+    <variable name="accountcode" value="' + row.user + '"/>\
+    <variable name="user_context" value="custom_dialplan"/>\
+    <variable name="effective_caller_id_name" value="' + row.name + '"/>\
+    <variable name="effective_caller_id_number" value="' + row.user + '"/>\
+    <variable name="outbound_caller_id_name" value="' + row.ANI + '"/>\
+    <variable name="outbound_caller_id_number" value="' + row.ANI + '"/>\
+    <variable name="callgroup" value="default"/>\
+    <variable name="sip-force-contact" value="NDLB-connectile-dysfunction"/>\
+    <variable name="x-powered-by" value="http://www.freeswitch.org.cn"/>\
+    </variables>\
+    </user>\
+    </users>\
+    </group>\
+    </groups>\
+    </domain>\
+    </section>\
+    </document>';
+    //<variable name="billing_account" value="' + row.account + '"/>\
+    res.send(xml);
 }
 FS_API.prototype.parse_dialplan = function (req,res){
     var self = this;
@@ -74,7 +101,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
         <action application="set" data="RECORD_COMMENT=FreeSWITCH"/>\
         <action application="set" data="RECORD_DATE=${strftime(%Y-%m-%d %H:%M)}"/>\
         <action application="set" data="RECORD_STEREO=true"/>\
-        <action application="record_session" data="$${base_dir}/recordings/archive/[${strftime(%Y-%m-%d %H-%M-%S)}] ${caller_id_number}-${destination_number}.wav"/>';
+        <action application="record_session" data="$${base_dir}/recordings/archive/${strftime(%Y-%m-%d)}/${caller_id_number}/[${strftime(%Y-%m-%d %H-%M-%S)}] ${caller_id_number}-${destination_number}.wav"/>';
 
     var Context = req.body['Caller-Context'];
     if(Context === 'custom_dialplan'){
@@ -115,8 +142,11 @@ FS_API.prototype.parse_dialplan = function (req,res){
         }
         else if(sip_to_user === 'welcome'){
             var sip_from_user = req.body['Hunt-Orig-Caller-ID-Number'];
-            var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";
+            /*var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";*/
+            var sql = "SELECT s.caller_id_number, s.binding_mobile_number, s.realm, s.resonance, s.billing_account " +
+                "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account AND " +
+                "s.caller_id_number = a.frontDesk WHERE a.hotlineNO = '" + sip_from_user + "'";
             db.getDB().query(sql,function(rows,fileds){
                 if(rows.length > 0){
                     self._dialplan_res(rows,res);
@@ -281,7 +311,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
             <action application="export" data="dialed_extension=$1"/>\
             <action application="bridge" data="user/'+ user + '@' + realm +'"/>\
             <action application="answer"/>\
-            <action application="bridge" data="loopback/app=voicemail:zhizhi ${domain_name} ${dialed_extension}"/>\
+            <action application="ivr" data="leave_message_ivr"/>\
             </condition>\
             </extension>';
     if(resonance == '1'){
@@ -302,4 +332,79 @@ FS_API.prototype._dialplan_res = function (rows, res){
 
     }
     res.send(self.xml_start + xml + self.xml_end);
+}
+FS_API.prototype.parse_configuration = function(req, res){
+    var xml = '<document type="freeswitch/xml">\
+    <section name="configuration">\
+    <configuration name="ivr.conf" description="IVR menus">\
+    <menus>\
+    <menu name="custom_welcome_ivr"\
+    greet-long="$${base_dir}/sounds/custom_ivr/welcome.wav"\
+    greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
+    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+    confirm-macro=""\
+    confirm-key=""\
+    tts-engine="flite"\
+    tts-voice="rms"\
+    confirm-attempts="3"\
+    timeout="10000"\
+    digit-len="4"\
+    inter-digit-timeout="2000"\
+    max-failures="3"\
+    max-timeouts="3">\
+    <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>\
+    <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/>\
+    </menu>\
+    <!--工号绑定IVR--> \
+    <menu name="custom_binding_ivr"\
+    greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
+    greet-short="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
+    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+    confirm-macro=""\
+    confirm-key=""\
+    tts-engine="flite"\
+    tts-voice="rms"\
+    confirm-attempts="3"\
+    timeout="10000"\
+    max-failures="3"\
+    max-timeouts="3">\
+    <entry action="menu-sub" digits="1" param="binding_sub_ivr"/>\
+    <entry action="menu-exec-app" digits="2" param="transfer query_binding XML custom_dialplan"/>\
+    <entry action="menu-exec-app" digits="3" param="transfer cancel_binding XML custom_dialplan"/>\
+    </menu>\
+    <!-- 工号绑定IVR, Sub Menu -->\
+    <menu name="binding_sub_ivr"\
+    greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+    greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+    timeout="10000"\
+    max-failures="3"\
+    max-timeouts="3"\
+    inter-digit-timeout="2000"\
+    digit-len="4">\
+    <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer binding_$1 XML custom_dialplan"/>\
+    <entry action="menu-top" digits="*"/>\
+    </menu>\
+    <!-- 留言IVR -->\
+    <menu name="leave_message_ivr"\
+    greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+    greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+    timeout="10000"\
+    max-failures="3"\
+    max-timeouts="3"\
+    inter-digit-timeout="2000"\
+    digit-len="4">\
+    <entry action="menu-exec-app" digits="1" param="record_session::$${recordings_dir}/${caller_id_number}.${strftime(%Y-%m-%d-%H-%M-%S)}.wav"/>\
+    </menu>\
+    </menus>\
+    </configuration>\
+    </section>\
+    </document>';
+    res.send(xml);
+    logger.info('parse_configuration called!!');
 }

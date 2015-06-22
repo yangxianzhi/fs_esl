@@ -16,6 +16,8 @@ var Call = exports.Call = function(uuid,esl) {
     this.HangupCause = '';
     this.CallDuration = 0;
     this.cost = 0;
+    this.RecordFilePath = '';
+    this.RecordSeconds = 0;
     this.isInsert = false;
     this.channels = new map();
     this.billingrate = null;
@@ -58,11 +60,11 @@ Call.prototype.UpdateInfo = function(evt){
         }
     }
 
-    var val = evt.getHeader('Caller-Callee-ID-Number');
+    var val = evt.getHeader('Caller-RDNIS'); //被叫号码
     if(val)
         self.CalleeIDNumber = val;
 
-    val = evt.getHeader('Caller-Caller-ID-Number');
+    val = evt.getHeader('Caller-ANI');//主叫号码
     if(val)
         self.CallerIDNumber = val;
 
@@ -87,6 +89,14 @@ Call.prototype.UpdateInfo = function(evt){
         }
     }
 
+    val = evt.getHeader('Record-File-Path');
+    if(val)
+        self.RecordFilePath = val;
+
+    val = evt.getHeader('variable_record_seconds');
+    if(val)
+        self.RecordSeconds = val;
+
     var callState = evt.getHeader('Channel-Call-State');
     if(self.channels.count() === 0 && callState == 'HANGUP' && !self.isInsert){
         if(self.AnsweredTime != '')
@@ -96,9 +106,11 @@ Call.prototype.UpdateInfo = function(evt){
             self.HangupTime = new Date(parseInt(self.HangupTime,10)/1000).toLocaleString();
 
         //insert MySQL //INSERT INTO calls (UUID, CalleeIDNumber ...) VALUES ('UUID', 'CalleeIDNumber'...)
-        var sql = "INSERT INTO calls (UUID,cost,CalleeIDNumber,CallerIDNumber,HangupCause,AnsweredTime,HangupTime,CallDuration) VALUES ('" +
+        var sql = "INSERT INTO calls (UUID,cost,CalleeIDNumber,CallerIDNumber,HangupCause,AnsweredTime," +
+            "HangupTime,CallDuration,RecordFilePath,RecordSeconds) VALUES ('" +
             self.UUID + "','" + self.cost + "','" + self.CalleeIDNumber + "','" + self.CallerIDNumber + "','" +
-            self.HangupCause + "','" + self.AnsweredTime + "','" + self.HangupTime + "','" + self.CallDuration + "')";
+            self.HangupCause + "','" + self.AnsweredTime + "','" + self.HangupTime + "','"
+            + self.CallDuration + "','" + self.RecordFilePath + "','" + self.RecordSeconds + "')";
         db.getDB().query(sql);
         self.isInsert = true;
     }

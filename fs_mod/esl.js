@@ -125,6 +125,11 @@ ESL.prototype.ListenerServerEvent = function(){
 
 ESL.prototype.parseEvt = function(evt) {
     var self = this;
+    /*调试使用
+    if(evt.type === 'RECORD_START'){
+        var debug = '';
+        debug = debug +'';
+    }*/
     if(evt.type === 'CUSTOM'){
         var user = evt.getHeader('from-user');
         if(user){
@@ -147,8 +152,9 @@ ESL.prototype.parseEvt = function(evt) {
         }
         return;
     }
-    else if(evt.type != undefined && evt.type.indexOf('CHANNEL') == 0){/* || evt.type === 'CALL_UPDATE' || evt.type === 'CALL_SECURE'*/
-        var CallUUID = evt.getHeader('Channel-Call-UUID');
+    else if(evt.type != undefined && (evt.type.indexOf('CHANNEL') == 0 || evt.type.indexOf('RECORD') == 0)){/* || evt.type === 'CALL_UPDATE' || evt.type === 'CALL_SECURE'*/
+        //var CallUUID = evt.getHeader('Channel-Call-UUID');
+        var CallUUID = evt.getHeader('variable_sip_call_id');
         if(CallUUID){
             var call=null;
             if(self.calls.has(CallUUID)){

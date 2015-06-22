@@ -73,12 +73,12 @@ Channel.prototype.UpdateInfo = function(evt,call) {
 
     if (evt.type === 'CHANNEL_HANGUP' && !self.isInsert) {
         var sql = "INSERT INTO channels (UniqueID,Name,HangupCause,CreatedTime,Direction,CodecName," +
-            "CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName," +
-            "OtherLegNetworkAddr,billing_account) VALUES ('" +
-            self.UniqueID + "','" + self.Name + "','" + self.HangupCause + "','" + self.CreatedTime + "','"
-            + self.Direction + "','" + self.CodecName + "','" +
-            self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','" + self.OtherLegDirection + "','" +
-            self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','" + self.billing_account + "')";
+            "CallerNetworkAddr,OtherLegUniqueID,OtherLegDirection,OtherLegChannelName,OtherLegNetworkAddr," +
+            "billing_account,callid,CallerIDName,CalleeIDName) VALUES ('" + self.UniqueID + "','"
+            + self.Name + "','" + self.HangupCause + "','" + self.CreatedTime + "','" + self.Direction + "','"
+            + self.CodecName + "','" + self.CallerNetworkAddr + "','" + self.OtherLegUniqueID + "','"
+            + self.OtherLegDirection + "','" + self.OtherLegChannelName + "','" + self.OtherLegNetworkAddr + "','"
+            + self.billing_account + "','" + call.UUID + "','" + call.CallerIDNumber + "','" + call.CalleeIDNumber + "')";
         db.getDB().query(sql);
 
         self.isInsert = true;

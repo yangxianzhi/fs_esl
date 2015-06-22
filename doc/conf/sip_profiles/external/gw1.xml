@@ -1,15 +1,15 @@
 <include>
   <gateway name="gw1">
   <!--/// account username *required* ///-->
-  <param name="username" value="cluecon"/>
+  <param name="username" value="20001172"/>
   <!--/// auth realm: *optional* same as gateway name, if blank ///-->
-  <param name="realm" value="124.193.171.212:6020"/>
+  <param name="realm" value="115.29.238.145:6061"/>
   <!--/// username to use in from: *optional* same as  username, if blank ///-->
-  <!--<param name="from-user" value="cluecon"/>-->
+  <!--<param name="from-user" value="20001172"/>-->
   <!--/// domain to use in from: *optional* same as  realm, if blank ///-->
   <!--<param name="from-domain" value="asterlink.com"/>-->
   <!--/// account password *required* ///-->
-  <param name="password" value="2007"/>
+  <param name="password" value="2tgjq"/>
   <!--/// extension for inbound calls: *optional* same as username, if blank ///-->
   <!--<param name="extension" value="cluecon"/>-->
   <!--/// proxy host: *optional* same as realm, if blank ///-->
@@ -19,7 +19,7 @@
   <!--/// expire in seconds: *optional* 3600, if blank ///-->
   <!--<param name="expire-seconds" value="60"/>-->
   <!--/// do not register ///-->
-  <param name="register" value="false"/>
+  <param name="register" value="true"/>
   <!-- which transport to use for register -->
   <!--<param name="register-transport" value="udp"/>-->
   <!--How many seconds before a retry when a failure or timeout occurs -->

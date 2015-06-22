@@ -45,12 +45,8 @@
       <!-- one or more of these imply you want to pick the exact variables that are transmitted -->
       <!--<param name="enable-post-var" value="Unique-ID"/>-->
     <!--</binding>-->
-  	<binding name="directory">
-      <param name="gateway-url" value="http://127.0.0.1:8181/directory" bindings="directory"/>
-    </binding>
-
-  	<binding name="dialplan">
-      <param name="gateway-url" value="http://127.0.0.1:8181/dialplan" bindings="dialplan"/>
+  	<binding name="nodejs_curl_api">
+      <param name="gateway-url" value="http://127.0.0.1:8181/FsCurlApi" bindings="configuration|directory|dialplan"/>
     </binding>
   </bindings>
 </configuration>

@@ -752,9 +752,10 @@
     
     <extension name="outbound">
 	  	<condition field="destination_number" expression="^9(.*)$">
+			<!--<action application="bridge" data="sofia/external/$1@115.29.238.145:6061"/>-->
 		    <action application="bridge" data="sofia/gateway/gw1/$1"/>
 	  	</condition>
-		</extension>
+	</extension>
 
     <!--
 	You can place files in the default directory to get included.
