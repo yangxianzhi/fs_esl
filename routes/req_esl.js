@@ -26,3 +26,7 @@ exports.fs_xml_curl_api = function(req,res){
         fs_app.parse_configuration(req,res);
     }
 }
+
+exports.fs_cmd = function(req, res){
+    fs_app.fs_cmd(req,res);
+}

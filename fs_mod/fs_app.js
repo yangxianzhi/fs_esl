@@ -5,6 +5,7 @@ var logger = require("../logger").getLogger('FS_API','INFO');
 var db = require('../db_mod/database');
 var map = require('hashmap');
 var EventEmitter = require('events').EventEmitter;
+var exec_cmd = require('./exec_shell').exec_cmd;
 
 var FS_API = exports.FS_API = function(){
     this.sipusers = new map();
@@ -117,8 +118,8 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 '<action application="transfer" data="8888 XML custom_dialplan"/>\
                 </condition>\
                 </extension>';
-        var sip_to_user = req.body['Hunt-Destination-Number'];
-        if(sip_to_user === '0000'){
+        var Destination_Number = req.body['Hunt-Destination-Number'];
+        if(Destination_Number === '0000'){
             //工号绑定IVR
             var xml = '<extension name="ivr_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
@@ -129,7 +130,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 </extension>';
             res.send(self.xml_start + xml + self.xml_end);
         }
-        else if(sip_to_user === '8888'){
+        else if(Destination_Number === '8888'){
             //欢迎语IVR
             var xml = '<extension name="ivr_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
@@ -140,13 +141,13 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 </extension>';
             res.send(self.xml_start + xml + self.xml_end);
         }
-        else if(sip_to_user === 'welcome'){
-            var sip_from_user = req.body['Hunt-Orig-Caller-ID-Number'];
+        else if(Destination_Number === 'welcome'){
+            var sip_to_user = req.body['variable_sip_to_user'];
             /*var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
                 "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";*/
             var sql = "SELECT s.caller_id_number, s.binding_mobile_number, s.realm, s.resonance, s.billing_account " +
                 "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account AND " +
-                "s.caller_id_number = a.frontDesk WHERE a.hotlineNO = '" + sip_from_user + "'";
+                "s.caller_id_number = a.frontDesk WHERE a.hotlineNO = '" + sip_to_user + "'";
             db.getDB().query(sql,function(rows,fileds){
                 if(rows.length > 0){
                     self._dialplan_res(rows,res);
@@ -156,9 +157,9 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 }
             });
         }
-        else if(sip_to_user.indexOf('binding_') == 0){
+        else if(Destination_Number.indexOf('binding_') == 0){
             var caller_id = req.body['Caller-Caller-ID-Number'];
-            var number = sip_to_user.substr(sip_to_user.indexOf('_')+1);
+            var number = Destination_Number.substr(Destination_Number.indexOf('_')+1);
             var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
             db.getDB().query(sql,function(){
                 var xml = '<extension name="binding_demo">\
@@ -170,7 +171,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 res.send(self.xml_start + xml + self.xml_end);
             });
         }
-        else if(sip_to_user === 'query_binding'){
+        else if(Destination_Number === 'query_binding'){
             var caller_id = req.body['Caller-Caller-ID-Number'];
             var sql = "SELECT binding_work_number " +
                 "FROM sip_users WHERE caller_id_number = '"+caller_id+"'";
@@ -200,7 +201,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 res.send(self.xml_start + xml + self.xml_end);
             });
         }
-        else if(sip_to_user === 'cancel_binding'){
+        else if(Destination_Number === 'cancel_binding'){
             var caller_id = req.body['Caller-Caller-ID-Number'];
             var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
             db.getDB().query(sql,function(){
@@ -213,7 +214,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 res.send(self.xml_start + xml + self.xml_end);
             });
         }
-        else if(sip_to_user === '9196'){
+        else if(Destination_Number === '9196'){
             var xml = '<extension name="echo">\
                 <condition field="destination_number" expression="^9196$">\
                 <action application="answer"/>\
@@ -222,7 +223,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 </extension>';
             res.send(self.xml_start + xml + self.xml_end);
         }
-        else if(sip_to_user[0] === '9'){
+        else if(Destination_Number[0] === '9'){
             //内线打外线要计费
             //billing_yes=true 说明要计费
             //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
@@ -244,10 +245,10 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 }
             });
         }
-        else if(sip_to_user.indexOf('10') == 0){
+        else if(Destination_Number.indexOf('10') == 0){
             //内线分机号码10开头
             var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE caller_id_number = '"+sip_to_user+"'";
+                "FROM sip_users WHERE caller_id_number = '"+Destination_Number+"'";
             db.getDB().query(sql,function(rows,fileds){
                 if(rows.length > 0){
                     self._dialplan_res(rows,res);
@@ -260,13 +261,13 @@ FS_API.prototype.parse_dialplan = function (req,res){
         else{
             //可能是工号或直线号码
             var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE binding_work_number = '"+sip_to_user+"'";
+                "FROM sip_users WHERE binding_work_number = '"+Destination_Number+"'";
             db.getDB().query(sql,function(rows,fileds){
                 if(rows.length > 0){
                     self._dialplan_res(rows,res);
                 }else{
                     var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                        "FROM sip_users WHERE binding_mobile_number = '"+sip_to_user+"'";
+                        "FROM sip_users WHERE binding_mobile_number = '"+Destination_Number+"'";
                     db.getDB().query(sql,function(rows,fileds){
                         if(rows.length > 0){
                             self._dialplan_res(rows,res);
@@ -334,77 +335,102 @@ FS_API.prototype._dialplan_res = function (rows, res){
     res.send(self.xml_start + xml + self.xml_end);
 }
 FS_API.prototype.parse_configuration = function(req, res){
-    var xml = '<document type="freeswitch/xml">\
-    <section name="configuration">\
-    <configuration name="ivr.conf" description="IVR menus">\
-    <menus>\
-    <menu name="custom_welcome_ivr"\
-    greet-long="$${base_dir}/sounds/custom_ivr/welcome.wav"\
-    greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
-    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
-    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
-    confirm-macro=""\
-    confirm-key=""\
-    tts-engine="flite"\
-    tts-voice="rms"\
-    confirm-attempts="3"\
-    timeout="10000"\
-    digit-len="4"\
-    inter-digit-timeout="2000"\
-    max-failures="3"\
-    max-timeouts="3">\
-    <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>\
-    <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/>\
-    </menu>\
-    <!--工号绑定IVR--> \
-    <menu name="custom_binding_ivr"\
-    greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
-    greet-short="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
-    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
-    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
-    confirm-macro=""\
-    confirm-key=""\
-    tts-engine="flite"\
-    tts-voice="rms"\
-    confirm-attempts="3"\
-    timeout="10000"\
-    max-failures="3"\
-    max-timeouts="3">\
-    <entry action="menu-sub" digits="1" param="binding_sub_ivr"/>\
-    <entry action="menu-exec-app" digits="2" param="transfer query_binding XML custom_dialplan"/>\
-    <entry action="menu-exec-app" digits="3" param="transfer cancel_binding XML custom_dialplan"/>\
-    </menu>\
-    <!-- 工号绑定IVR, Sub Menu -->\
-    <menu name="binding_sub_ivr"\
-    greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
-    greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
-    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
-    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
-    timeout="10000"\
-    max-failures="3"\
-    max-timeouts="3"\
-    inter-digit-timeout="2000"\
-    digit-len="4">\
-    <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer binding_$1 XML custom_dialplan"/>\
-    <entry action="menu-top" digits="*"/>\
-    </menu>\
-    <!-- 留言IVR -->\
-    <menu name="leave_message_ivr"\
-    greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
-    greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
-    invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
-    exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
-    timeout="10000"\
-    max-failures="3"\
-    max-timeouts="3"\
-    inter-digit-timeout="2000"\
-    digit-len="4">\
-    <entry action="menu-exec-app" digits="1" param="record_session::$${recordings_dir}/${caller_id_number}.${strftime(%Y-%m-%d-%H-%M-%S)}.wav"/>\
-    </menu>\
-    </menus>\
-    </configuration>\
-    </section>\
-    </document>';
-    res.send(xml);
+    var ivr_menu_name = req.body['Menu-Name'];
+    var xml_start = '<document type="freeswitch/xml">\
+        <section name="configuration">\
+        <configuration name="ivr.conf" description="IVR menus">\
+        <menus>\
+        <menu name="'+ivr_menu_name+'"';
+    var xml_end = '</menu>\
+        </menus>\
+        </configuration>\
+        </section>\
+        </document>';
+    var xml;
+    switch (ivr_menu_name){
+        case 'custom_welcome_ivr' :
+        {
+            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/welcome.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
+                invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+                exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+                confirm-macro=""\
+                confirm-key=""\
+                tts-engine="flite"\
+                tts-voice="rms"\
+                confirm-attempts="3"\
+                timeout="10000"\
+                digit-len="4"\
+                inter-digit-timeout="2000"\
+                max-failures="3"\
+                max-timeouts="3">\
+                <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>\
+                <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/>'
+            break;
+        }
+        case 'custom_binding_ivr' :
+        {
+        //工号绑定IVR
+            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
+                invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+                exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+                confirm-macro=""\
+                confirm-key=""\
+                tts-engine="flite"\
+                tts-voice="rms"\
+                confirm-attempts="3"\
+                timeout="10000"\
+                max-failures="3"\
+                max-timeouts="3">\
+                <entry action="menu-sub" digits="1" param="binding_sub_ivr"/>\
+                <entry action="menu-exec-app" digits="2" param="transfer query_binding XML custom_dialplan"/>\
+                <entry action="menu-exec-app" digits="3" param="transfer cancel_binding XML custom_dialplan"/>';
+            break;
+        }
+        case 'binding_sub_ivr' :
+        {
+            //工号绑定IVR, Sub Menu
+            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+                exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+                timeout="10000"\
+                max-failures="3"\
+                max-timeouts="3"\
+                inter-digit-timeout="2000"\
+                digit-len="4">\
+                <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer binding_$1 XML custom_dialplan"/>\
+                <entry action="menu-top" digits="*"/>';
+            break;
+        }
+        case 'leave_message_ivr' :
+        {
+            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
+                exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+                timeout="10000"\
+                max-failures="3"\
+                max-timeouts="3"\
+                inter-digit-timeout="2000"\
+                digit-len="4">\
+                <entry action="menu-exec-app" digits="1" param="record_session::$${recordings_dir}/leave_message_ivr/${caller_id_number}.${strftime(%Y-%m-%d-%H-%M-%S)}.wav"/>';
+            break;
+        }
+    }
+    res.send(xml_start + xml + xml_end);
     logger.info('parse_configuration called!!');
+}
+FS_API.prototype.fs_cmd = function(req, res){
+    var cmd = req.body.cmd;
+    exec_cmd('fs_cli -x '+cmd,function(error,stdout,stderr){
+        if(error){
+            res.send(error.message);
+            return;
+        }
+
+        logger.info('stdout:', stdout);
+        res.send(stdout);
+    });
 }

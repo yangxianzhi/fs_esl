@@ -87,19 +87,18 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
 ESL.prototype.checkFreeSWITCH = function(webapp,self){
     exec_cmd('fs_cli -x status',function(error,stdout,stderr){
         if(error){
-            //logger.error('error:', error);
             setTimeout(function(){
                 self.event.emit('checkFreeSWITCH',webapp,self);
             }, 5000);
             return;
         }
 
-        //logger.info('stdout:', stdout);
+        logger.info('stdout:', stdout);
         self.event.removeListener('checkFreeSWITCH',self.checkFreeSWITCH);
         self.esl_conn = null;
         webapp.startEslConnect();
         setTimeout(webapp.startHttpServer(),2000);
-    })
+    });
 }
 
 ESL.prototype.ListenerServerEvent = function(){

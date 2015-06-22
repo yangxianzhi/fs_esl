@@ -28,6 +28,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', routes);
 app.use('/users', users);
 app.post('/FsCurlApi', req_esl.fs_xml_curl_api);
+app.post('/freeswitch_cmd', req_esl.fs_cmd);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -58,6 +59,16 @@ app.use(function(err, req, res, next) {
         message: err.message,
         error: {}
     });
+});
+
+//设置跨域访问
+app.all('*', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");
+    res.header("X-Powered-By",' 3.2.1')
+    res.header("Content-Type", "application/json;charset=utf-8");
+    next();
 });
 
 process.on('uncaughtException', function(err){
