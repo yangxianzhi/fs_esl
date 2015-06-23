@@ -114,171 +114,211 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 </document>';
         self.xml_default = '<extension name="custom_default">\
                 <condition field="destination_number" expression="^(.*)$">'
-                + self.xml_record +
-                '<action application="transfer" data="8888 XML custom_dialplan"/>\
-                </condition>\
-                </extension>';
-        var Destination_Number = req.body['Hunt-Destination-Number'];
-        if(Destination_Number === '0000'){
-            //工号绑定IVR
-            var xml = '<extension name="ivr_demo">\
+        + self.xml_record +
+        '<action application="transfer" data="8888 XML custom_dialplan"/>\
+        </condition>\
+        </extension>';
+        var sip_from_user = req.body['variable_sip_from_user'];
+        var sql = "SELECT a.cash, a.status " +
+            "FROM ACCOUNT a INNER JOIN sip_users s ON a.ID = s.billing_account " +
+            "WHERE s.caller_id_number = '" + sip_from_user + "'";
+        db.getDB().query(sql,function(rows,fields){
+            if(rows.length>0){
+                var status = parseInt(rows[0].status,10);
+                if(status == 2){
+                    var audio = 'account_stop';
+                    var xml = '<extension name="custom_outbount">\
+                            <condition field="destination_number" expression="^(.*)$">\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
+                            <action application="hangup" data="NORMAL_CLEARING"/>\
+                            </condition>\
+                            </extension>';
+                    res.send(self.xml_start + xml + self.xml_end);
+                }
+                else{
+                    var Destination_Number = req.body['Hunt-Destination-Number'];
+                    if(Destination_Number === '0000'){
+                        //工号绑定IVR
+                        var xml = '<extension name="ivr_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
                 <action application="answer"/>\
                 <action application="sleep" data="1000"/>\
                 <action application="ivr" data="custom_binding_ivr"/>\
                 </condition>\
                 </extension>';
-            res.send(self.xml_start + xml + self.xml_end);
-        }
-        else if(Destination_Number === '8888'){
-            //欢迎语IVR
-            var xml = '<extension name="ivr_demo">\
-                <condition field="destination_number" expression="^(.*)$">\
-                <action application="answer"/>\
-                <action application="sleep" data="1000"/>\
-                <action application="ivr" data="custom_welcome_ivr"/>\
-                </condition>\
-                </extension>';
-            res.send(self.xml_start + xml + self.xml_end);
-        }
-        else if(Destination_Number === 'welcome'){
-            var sip_to_user = req.body['variable_sip_to_user'];
-            /*var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";*/
-            var sql = "SELECT s.caller_id_number, s.binding_mobile_number, s.realm, s.resonance, s.billing_account " +
-                "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account AND " +
-                "s.caller_id_number = a.frontDesk WHERE a.hotlineNO = '" + sip_to_user + "'";
-            db.getDB().query(sql,function(rows,fileds){
-                if(rows.length > 0){
-                    self._dialplan_res(rows,res);
-                }
-                else{
-                    res.send(self.xml_start + self.xml_default + self.xml_end);
-                }
-            });
-        }
-        else if(Destination_Number.indexOf('binding_') == 0){
-            var caller_id = req.body['Caller-Caller-ID-Number'];
-            var number = Destination_Number.substr(Destination_Number.indexOf('_')+1);
-            var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
-            db.getDB().query(sql,function(){
-                var xml = '<extension name="binding_demo">\
+                        res.send(self.xml_start + xml + self.xml_end);
+                    }
+                    else if(Destination_Number === '8888'){
+                        //欢迎语IVR
+                        var xml = '<extension name="ivr_demo">\
+                            <condition field="destination_number" expression="^(.*)$">\
+                            <action application="answer"/>\
+                            <action application="sleep" data="1000"/>\
+                            <action application="ivr" data="custom_welcome_ivr"/>\
+                            </condition>\
+                            </extension>';
+                        res.send(self.xml_start + xml + self.xml_end);
+                    }
+                    else if(Destination_Number === 'welcome'){
+                        var sip_to_user = req.body['variable_sip_to_user'];
+                        /*var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                         "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";*/
+                        var sql = "SELECT s.caller_id_number, s.binding_mobile_number, s.realm, s.resonance, s.billing_account " +
+                            "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account AND " +
+                            "s.caller_id_number = a.frontDesk WHERE a.serviceNO like '%" + sip_to_user + "%'";
+                        db.getDB().query(sql,function(rows,fileds){
+                            if(rows.length > 0){
+                                self._dialplan_res(rows,res);
+                            }
+                            else{
+                                res.send(self.xml_start + self.xml_default + self.xml_end);
+                            }
+                        });
+                    }
+                    else if(Destination_Number.indexOf('binding_') == 0){
+                        var caller_id = req.body['Caller-Caller-ID-Number'];
+                        var number = Destination_Number.substr(Destination_Number.indexOf('_')+1);
+                        var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
+                        db.getDB().query(sql,function(){
+                            var xml = '<extension name="binding_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
                 <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
                 <action application="hangup"/>\
                 </condition>\
                 </extension>';
-                res.send(self.xml_start + xml + self.xml_end);
-            });
-        }
-        else if(Destination_Number === 'query_binding'){
-            var caller_id = req.body['Caller-Caller-ID-Number'];
-            var sql = "SELECT binding_work_number " +
-                "FROM sip_users WHERE caller_id_number = '"+caller_id+"'";
-            db.getDB().query(sql,function(rows,fields){
-                var xml1 = '<extension name="query_binding_demo">\
+                            res.send(self.xml_start + xml + self.xml_end);
+                        });
+                    }
+                    else if(Destination_Number === 'query_binding'){
+                        var caller_id = req.body['Caller-Caller-ID-Number'];
+                        var sql = "SELECT binding_work_number " +
+                            "FROM sip_users WHERE caller_id_number = '"+caller_id+"'";
+                        db.getDB().query(sql,function(rows,fields){
+                            var xml1 = '<extension name="query_binding_demo">\
                         <condition field="destination_number" expression="^(.*)$">';
-                 var xml2 = ' <action application="ivr" data="custom_binding_ivr"/>\
+                            var xml2 = ' <action application="ivr" data="custom_binding_ivr"/>\
                         </condition>\
                         </extension>';
-                var xml = '';
-                if(rows.length > 0) {
-                    xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_dinded.wav"/>';
-                    var id = rows[0].binding_work_number;
-                    if(id != ''){
-                        for(var i in id){
-                            xml = xml + '<action application="playback" data="$${base_dir}/sounds/custom_ivr/number/'+ id[i] +'.wav"/>';
-                        }
+                            var xml = '';
+                            if(rows.length > 0) {
+                                xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_dinded.wav"/>';
+                                var id = rows[0].binding_work_number;
+                                if(id != ''){
+                                    for(var i in id){
+                                        xml = xml + '<action application="playback" data="$${base_dir}/sounds/custom_ivr/number/'+ id[i] +'.wav"/>';
+                                    }
+                                }
+                                else{
+                                    xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
+                                }
+                            }
+                            else{
+                                xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
+                            }
+                            xml = xml1 + xml + xml2;
+                            res.send(self.xml_start + xml + self.xml_end);
+                        });
                     }
-                    else{
-                        xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
-                    }
-                }
-                else{
-                    xml = '<action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_undind.wav"/>';
-                }
-                xml = xml1 + xml + xml2;
-                res.send(self.xml_start + xml + self.xml_end);
-            });
-        }
-        else if(Destination_Number === 'cancel_binding'){
-            var caller_id = req.body['Caller-Caller-ID-Number'];
-            var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
-            db.getDB().query(sql,function(){
-                var xml = '<extension name="cancel_binding_demo">\
+                    else if(Destination_Number === 'cancel_binding'){
+                        var caller_id = req.body['Caller-Caller-ID-Number'];
+                        var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
+                        db.getDB().query(sql,function(){
+                            var xml = '<extension name="cancel_binding_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
                 <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
                 <action application="hangup"/>\
                 </condition>\
                 </extension>';
-                res.send(self.xml_start + xml + self.xml_end);
-            });
-        }
-        else if(Destination_Number === '9196'){
-            var xml = '<extension name="echo">\
+                            res.send(self.xml_start + xml + self.xml_end);
+                        });
+                    }
+                    else if(Destination_Number === '9196'){
+                        var xml = '<extension name="echo">\
                 <condition field="destination_number" expression="^9196$">\
                 <action application="answer"/>\
                 <action application="echo"/>\
                 </condition>\
                 </extension>';
-            res.send(self.xml_start + xml + self.xml_end);
-        }
-        else if(Destination_Number[0] === '9'){
-            //内线打外线要计费
-            //billing_yes=true 说明要计费
-            //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
-            var sip_from_user = req.body['variable_sip_from_user'];
-            var sql = "Select billing_account as account from sip_users where caller_id_number ='" + sip_from_user + "'";
-            db.getDB().query(sql,function(rows,fields){
-                if(rows.length > 0){
-                    self.xml_record = self.xml_record.replace('archive',rows[0].account);
-                    var xml = '<extension name="custom_outbount">\
-                    <condition field="destination_number" expression="^9(.*)$">'
-                    + self.xml_record +
-                    '<action application="set" data="billing_yes=true"/>\
-                    <action application="set" data="billing_heartbeat=60"/>\
-                    <action application="set" data="billing_account=' + rows[0].account + '"/>\
-                    <action application="bridge" data="sofia/gateway/gw1/$1"/>\
-                    </condition>\
-                    </extension>';
-                    res.send(self.xml_start + xml + self.xml_end);
+                        res.send(self.xml_start + xml + self.xml_end);
+                    }
+                    else if(Destination_Number[0] === '9'){
+                        var sip_from_user = req.body['variable_sip_from_user'];
+                        var sql = "SELECT a.cash, a.status " +
+                            "FROM ACCOUNT a INNER JOIN sip_users s ON a.ID = s.billing_account " +
+                            "WHERE s.caller_id_number = '" + sip_from_user + "'";
+                        db.getDB().query(sql,function(rows,fields){
+                            if(rows.length > 0){
+                                if(parseFloat(rows[0].cash) <= 0){
+                                    var audio = 'cash_insufficient';
+                                    var xml = '<extension name="custom_outbount">\
+                            <condition field="destination_number" expression="^(.*)$">\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
+                            <action application="hangup" data="NORMAL_CLEARING"/>\
+                            </condition>\
+                            </extension>';
+                                    res.send(self.xml_start + xml + self.xml_end);
+                                }
+                                else{
+                                    //内线打外线要计费
+                                    //billing_yes=true 说明要计费
+                                    //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
+                                    sql = "Select billing_account as account from sip_users where caller_id_number ='" + sip_from_user + "'";
+                                    db.getDB().query(sql,function(rows,fields){
+                                        if(rows.length > 0){
+                                            self.xml_record = self.xml_record.replace('archive',rows[0].account);
+                                            var xml = '<extension name="custom_outbount">\
+                                    <condition field="destination_number" expression="^9(.*)$">'
+                                                + self.xml_record +
+                                                '<action application="set" data="billing_yes=true"/>\
+                                                <action application="set" data="billing_heartbeat=60"/>\
+                                                <action application="set" data="billing_account=' + rows[0].account + '"/>\
+                                    <action application="bridge" data="sofia/gateway/gw1/$1"/>\
+                                    </condition>\
+                                    </extension>';
+                                            res.send(self.xml_start + xml + self.xml_end);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                    else if(Destination_Number.indexOf('10') == 0){
+                        //内线分机号码10开头
+                        var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                            "FROM sip_users WHERE caller_id_number = '"+Destination_Number+"'";
+                        db.getDB().query(sql,function(rows,fileds){
+                            if(rows.length > 0){
+                                self._dialplan_res(rows,res);
+                            }
+                            else{
+                                res.send(self.xml_start + self.xml_default + self.xml_end);
+                            }
+                        });
+                    }
+                    else{
+                        //可能是工号或直线号码
+                        var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                            "FROM sip_users WHERE binding_work_number = '"+Destination_Number+"'";
+                        db.getDB().query(sql,function(rows,fileds){
+                            if(rows.length > 0){
+                                self._dialplan_res(rows,res);
+                            }else{
+                                var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
+                                    "FROM sip_users WHERE binding_mobile_number = '"+Destination_Number+"'";
+                                db.getDB().query(sql,function(rows,fileds){
+                                    if(rows.length > 0){
+                                        self._dialplan_res(rows,res);
+                                    }
+                                    else{
+                                        res.send(self.xml_start + self.xml_default + self.xml_end);
+                                    }
+                                });
+                            }
+                        });
+                    }
                 }
-            });
-        }
-        else if(Destination_Number.indexOf('10') == 0){
-            //内线分机号码10开头
-            var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE caller_id_number = '"+Destination_Number+"'";
-            db.getDB().query(sql,function(rows,fileds){
-                if(rows.length > 0){
-                    self._dialplan_res(rows,res);
-                }
-                else{
-                    res.send(self.xml_start + self.xml_default + self.xml_end);
-                }
-            });
-        }
-        else{
-            //可能是工号或直线号码
-            var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                "FROM sip_users WHERE binding_work_number = '"+Destination_Number+"'";
-            db.getDB().query(sql,function(rows,fileds){
-                if(rows.length > 0){
-                    self._dialplan_res(rows,res);
-                }else{
-                    var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                        "FROM sip_users WHERE binding_mobile_number = '"+Destination_Number+"'";
-                    db.getDB().query(sql,function(rows,fileds){
-                        if(rows.length > 0){
-                            self._dialplan_res(rows,res);
-                        }
-                        else{
-                            res.send(self.xml_start + self.xml_default + self.xml_end);
-                        }
-                    });
-                }
-            });
-        }
+            }
+        });
     }
     else if(Context === 'default'){
         res.send('default.xml');
