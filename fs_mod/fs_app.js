@@ -251,11 +251,11 @@ FS_API.prototype.parse_dialplan = function (req,res){
                                 if(parseFloat(rows[0].cash) <= 0){
                                     var audio = 'cash_insufficient';
                                     var xml = '<extension name="custom_outbount">\
-                            <condition field="destination_number" expression="^(.*)$">\
-                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
-                            <action application="hangup" data="NORMAL_CLEARING"/>\
-                            </condition>\
-                            </extension>';
+                                        <condition field="destination_number" expression="^(.*)$">\
+                                        <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
+                                        <action application="hangup" data="NORMAL_CLEARING"/>\
+                                        </condition>\
+                                        </extension>';
                                     res.send(self.xml_start + xml + self.xml_end);
                                 }
                                 else{
@@ -267,14 +267,14 @@ FS_API.prototype.parse_dialplan = function (req,res){
                                         if(rows.length > 0){
                                             self.xml_record = self.xml_record.replace('archive',rows[0].account);
                                             var xml = '<extension name="custom_outbount">\
-                                    <condition field="destination_number" expression="^9(.*)$">'
+                                                <condition field="destination_number" expression="^9(.*)$">'
                                                 + self.xml_record +
                                                 '<action application="set" data="billing_yes=true"/>\
                                                 <action application="set" data="billing_heartbeat=60"/>\
                                                 <action application="set" data="billing_account=' + rows[0].account + '"/>\
-                                    <action application="bridge" data="sofia/gateway/gw1/$1"/>\
-                                    </condition>\
-                                    </extension>';
+                                                <action application="bridge" data="sofia/gateway/gw1/$1"/>\
+                                                </condition>\
+                                                </extension>';
                                             res.send(self.xml_start + xml + self.xml_end);
                                         }
                                     });
@@ -355,24 +355,38 @@ FS_API.prototype._dialplan_res = function (rows, res){
             <action application="ivr" data="leave_message_ivr"/>\
             </condition>\
             </extension>';
-    if(resonance == '1'){
-        xml = '<extension name="custom_dialplan_res1">\
-            <condition field="destination_number" expression="^(.*)$">'
-            + self.xml_record +
-            '<action application="bridge" data="user/'+ user + '@' + realm + ',[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
-            </condition>\
-            </extension>';
-
-    }else if(resonance == '2'){
-        xml = '<extension name="custom_dialplan_res2">\
-            <condition field="destination_number" expression="^(.*)$">'
-            + self.xml_record +
-            '<action application="bridge" data="user/'+ user + '@' + realm + '|[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
-            </condition>\
-            </extension>';
-
+    if(resonance == '0') {
+        res.send(self.xml_start + xml + self.xml_end);
     }
-    res.send(self.xml_start + xml + self.xml_end);
+    else {
+        var sql = "SELECT cash, status FROM ACCOUNT WHERE ID = '" + account + "'";
+        db.getDB().query(sql,function(rows,fields){
+           if(rows.length > 0){
+               if(parseFloat(rows[0].cash) <= 0){
+                   res.send(self.xml_start + xml + self.xml_end);
+               }
+               else{
+                   if(resonance == '1'){
+                       xml = '<extension name="custom_dialplan_res1">\
+                        <condition field="destination_number" expression="^(.*)$">'
+                       + self.xml_record +
+                       '<action application="bridge" data="user/'+ user + '@' + realm + ',[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
+                        </condition>\
+                        </extension>';
+                   }
+                   else if(resonance == '2'){
+                       xml = '<extension name="custom_dialplan_res2">\
+                        <condition field="destination_number" expression="^(.*)$">'
+                       + self.xml_record +
+                       '<action application="bridge" data="user/'+ user + '@' + realm + '|[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
+                        </condition>\
+                        </extension>';
+                   }
+                   res.send(self.xml_start + xml + self.xml_end);
+               }
+           }
+        });
+    }
 }
 FS_API.prototype.parse_configuration = function(req, res){
     var ivr_menu_name = req.body['Menu-Name'];
@@ -464,6 +478,11 @@ FS_API.prototype.parse_configuration = function(req, res){
 }
 FS_API.prototype.fs_cmd = function(req, res){
     var cmd = req.body.cmd;
+    var args = req.body.args;
+    for(var i in args){
+        cmd += ' ';
+        cmd += args[i];
+    }
     exec_cmd('fs_cli -x '+cmd,function(error,stdout,stderr){
         if(error){
             res.send(error.message);
