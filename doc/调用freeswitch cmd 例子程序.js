@@ -17,7 +17,11 @@ var http = require('http');
 var querystring = require('querystring');
 
 var postData = {
-    'cmd' : 'status'
+    'cmd' : 'status',
+    'args': [
+        'arg1',
+        'arg2'
+    ]
 };
 
 var data = querystring.stringify(postData);
