@@ -42,10 +42,8 @@ FS_API.prototype.parse_directory = function (req,res){
             /*var sql = "Select caller_id_number as user, caller_id_name as name," +
                 "password, billing_account as account, outbound_caller_id_number as ANI" +
                 " from sip_users where caller_id_number ='" + req.body.user + "'";*/
-            var sql = "SELECT a.hotlineNO as ANI, s.billing_account as account, " +
-                "s.caller_id_number as user, s.caller_id_name as name, s.password " +
-                "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account " +
-                "WHERE s.caller_id_number = '" + req.body.user + "'";
+            var sql = "SELECT s.billing_account as account, s.caller_id_number as user, s.caller_id_name as name, " +
+                "s.password FROM sip_users s WHERE s.caller_id_number = '" + req.body.user + "'";
             db.getDB().query(sql, function(rows, fields){
                 if(rows.length > 0){
                     self.sipusers.set(rows[0].user,rows[0]);
@@ -76,8 +74,6 @@ FS_API.prototype.res_regist = function(row, req, res){
     <variable name="user_context" value="custom_dialplan"/>\
     <variable name="effective_caller_id_name" value="' + row.name + '"/>\
     <variable name="effective_caller_id_number" value="' + row.user + '"/>\
-    <variable name="outbound_caller_id_name" value="' + row.ANI + '"/>\
-    <variable name="outbound_caller_id_number" value="' + row.ANI + '"/>\
     <variable name="callgroup" value="default"/>\
     <variable name="sip-force-contact" value="NDLB-connectile-dysfunction"/>\
     <variable name="x-powered-by" value="http://www.freeswitch.org.cn"/>\
@@ -89,7 +85,6 @@ FS_API.prototype.res_regist = function(row, req, res){
     </domain>\
     </section>\
     </document>';
-    //<variable name="billing_account" value="' + row.account + '"/>\
     res.send(xml);
 }
 FS_API.prototype.parse_dialplan = function (req,res){
@@ -115,7 +110,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
         self.xml_default = '<extension name="custom_default">\
                 <condition field="destination_number" expression="^(.*)$">'
         + self.xml_record +
-        '<action application="transfer" data="8888 XML custom_dialplan"/>\
+        '<action application="transfer" data="888888 XML custom_dialplan"/>\
         </condition>\
         </extension>';
         var sip_from_user = req.body['variable_sip_from_user'];
@@ -125,7 +120,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
         db.getDB().query(sql,function(rows,fields){
             if(rows.length>0){
                 var status = parseInt(rows[0].status,10);
-                if(status == 2){
+                if(status == 2){//状态2，表示账户已经停用
                     var audio = 'account_stop';
                     var xml = '<extension name="custom_outbount">\
                             <condition field="destination_number" expression="^(.*)$">\
@@ -137,7 +132,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 }
                 else{
                     var Destination_Number = req.body['Hunt-Destination-Number'];
-                    if(Destination_Number === '0000'){
+                    if(Destination_Number === '000000'){
                         //工号绑定IVR
                         var xml = '<extension name="ivr_demo">\
                 <condition field="destination_number" expression="^(.*)$">\
@@ -148,7 +143,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                 </extension>';
                         res.send(self.xml_start + xml + self.xml_end);
                     }
-                    else if(Destination_Number === '8888'){
+                    else if(Destination_Number === '888888'){
                         //欢迎语IVR
                         var xml = '<extension name="ivr_demo">\
                             <condition field="destination_number" expression="^(.*)$">\
@@ -161,11 +156,9 @@ FS_API.prototype.parse_dialplan = function (req,res){
                     }
                     else if(Destination_Number === 'welcome'){
                         var sip_to_user = req.body['variable_sip_to_user'];
-                        /*var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                         "FROM sip_users WHERE outbound_caller_id_number = '"+sip_from_user+"'";*/
-                        var sql = "SELECT s.caller_id_number, s.binding_mobile_number, s.realm, s.resonance, s.billing_account " +
+                        var sql = "SELECT s.caller_id_number, s.realm, s.resonance, s.billing_account " +
                             "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account AND " +
-                            "s.caller_id_number = a.frontDesk WHERE a.serviceNO like '%" + sip_to_user + "%'";
+                            "s.caller_id_number = a.frontDesk WHERE a.serviceNO = '" + sip_to_user + "'";
                         db.getDB().query(sql,function(rows,fileds){
                             if(rows.length > 0){
                                 self._dialplan_res(rows,res);
@@ -180,12 +173,15 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         var number = Destination_Number.substr(Destination_Number.indexOf('_')+1);
                         var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
                         db.getDB().query(sql,function(){
+                            /*? 不确定是否要更新员工表的sipExten字段。暂时注销。
+                            sql = "UPDATE employee SET sipExten='"+caller_id+"' WHERE exten = '"+number+"'";
+                            db.getDB().query(sql,function(){});*/
                             var xml = '<extension name="binding_demo">\
-                <condition field="destination_number" expression="^(.*)$">\
-                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
-                <action application="hangup"/>\
-                </condition>\
-                </extension>';
+                                <condition field="destination_number" expression="^(.*)$">\
+                                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                                <action application="hangup"/>\
+                                </condition>\
+                                </extension>';
                             res.send(self.xml_start + xml + self.xml_end);
                         });
                     }
@@ -223,12 +219,16 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         var caller_id = req.body['Caller-Caller-ID-Number'];
                         var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
                         db.getDB().query(sql,function(){
+                            /*? 不确定是否要更新员工表的sipExten字段。暂时注销。
+                            sql = "UPDATE employee SET sipExten='' WHERE exten = '"+number+"'";
+                            db.getDB().query(sql,function(){
+                            });*/
                             var xml = '<extension name="cancel_binding_demo">\
-                <condition field="destination_number" expression="^(.*)$">\
-                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
-                <action application="hangup"/>\
-                </condition>\
-                </extension>';
+                                <condition field="destination_number" expression="^(.*)$">\
+                                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                                <action application="hangup"/>\
+                                </condition>\
+                                </extension>';
                             res.send(self.xml_start + xml + self.xml_end);
                         });
                     }
@@ -249,6 +249,7 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         db.getDB().query(sql,function(rows,fields){
                             if(rows.length > 0){
                                 if(parseFloat(rows[0].cash) <= 0){
+                                    //账户欠费，不能外呼
                                     var audio = 'cash_insufficient';
                                     var xml = '<extension name="custom_outbount">\
                                         <condition field="destination_number" expression="^(.*)$">\
@@ -282,35 +283,48 @@ FS_API.prototype.parse_dialplan = function (req,res){
                             }
                         });
                     }
-                    else if(Destination_Number.indexOf('10') == 0){
-                        //内线分机号码10开头
-                        var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                            "FROM sip_users WHERE caller_id_number = '"+Destination_Number+"'";
-                        db.getDB().query(sql,function(rows,fileds){
-                            if(rows.length > 0){
-                                self._dialplan_res(rows,res);
-                            }
-                            else{
-                                res.send(self.xml_start + self.xml_default + self.xml_end);
-                            }
-                        });
-                    }
                     else{
-                        //可能是工号或直线号码
-                        var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                            "FROM sip_users WHERE binding_work_number = '"+Destination_Number+"'";
+                        //可能是工号
+                        var sql = "SELECT s.caller_id_number,s.realm,s.resonance,s.billing_account, " +
+                            "e.tel AS binding_mobile_number FROM employee e INNER JOIN sip_users s ON " +
+                            "e.exten = s.binding_work_number WHERE s.binding_work_number = '"+Destination_Number+"'";
                         db.getDB().query(sql,function(rows,fileds){
                             if(rows.length > 0){
                                 self._dialplan_res(rows,res);
                             }else{
-                                var sql = "SELECT caller_id_number, binding_mobile_number,realm,resonance,billing_account " +
-                                    "FROM sip_users WHERE binding_mobile_number = '"+Destination_Number+"'";
+                                //直接打手机号
+                                var sql = "SELECT s.caller_id_number,s.realm,s.resonance,s.billing_account, " +
+                                    "e.tel AS binding_mobile_number FROM employee e INNER JOIN sip_users s ON " +
+                                    "e.exten = s.binding_work_number WHERE e.tel = '"+Destination_Number+"'";
                                 db.getDB().query(sql,function(rows,fileds){
                                     if(rows.length > 0){
                                         self._dialplan_res(rows,res);
                                     }
                                     else{
-                                        res.send(self.xml_start + self.xml_default + self.xml_end);
+                                        //内线分机号码
+                                        var sql = "SELECT s.caller_id_number,s.realm,s.resonance,s.billing_account, " +
+                                            "e.tel AS binding_mobile_number FROM employee e INNER JOIN sip_users s ON " +
+                                            "e.exten = s.binding_work_number WHERE s.caller_id_number = '"+Destination_Number+"'";
+                                        db.getDB().query(sql,function(rows,fileds){
+                                            if(rows.length > 0){
+                                                self._dialplan_res(rows,res);
+                                            }
+                                            else{
+                                                //服务号判断
+                                                var sql = "SELECT a.accountId account, a.workCallFlow callFlow, a.welcomeIvr welcomWav, " +
+                                                    "a.unWorkIvr afterworkWav,a.frontDesk fD, a.serviceNO, a.startTimeMinute startM, " +
+                                                    "a.endTimeMinute endM, a.startTimeHour startH, a.endTimeHour endH, a.day " +
+                                                    "FROM ACCOUNTCONFIG a WHERE a.serviceNO = '"+Destination_Number+"'";
+                                                db.getDB().query(sql,function(rows,fileds){
+                                                    if(rows.length > 0){
+                                                        self._dialPlan_serverNo(rows,res);
+                                                    }
+                                                    else{
+                                                        res.send(self.xml_start + self.xml_default + self.xml_end);
+                                                    }
+                                                });
+                                            }
+                                        });
                                     }
                                 });
                             }
@@ -388,6 +402,9 @@ FS_API.prototype._dialplan_res = function (rows, res){
         });
     }
 }
+FS_API.prototype._dialPlan_serverNo = function (rows, res){
+
+}
 FS_API.prototype.parse_configuration = function(req, res){
     var ivr_menu_name = req.body['Menu-Name'];
     var xml_start = '<document type="freeswitch/xml">\
@@ -404,7 +421,12 @@ FS_API.prototype.parse_configuration = function(req, res){
     switch (ivr_menu_name){
         case 'custom_welcome_ivr' :
         {
-            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/welcome.wav"\
+            var sip_to_user = req.body['variable_sip_to_user'];
+            var sql = "SELECT s.caller_id_number, s.realm, s.resonance, " +
+                "s.billing_account FROM ACCOUNTCONFIG c INNER JOIN ACCOUNSERVICENUMBER a INNER JOIN " +
+                "sip_users s ON a.accountId = s.billing_account AND c.accountId = a.accountId AND " +
+                "s.caller_id_number = c.frontDesk WHERE a.serviceNO ='" + sip_to_user + "'";
+            xml = 'greet-long="http_cache://http://127.0.0.1:8181/welcome.wav"\
                 greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -476,6 +498,7 @@ FS_API.prototype.parse_configuration = function(req, res){
     res.send(xml_start + xml + xml_end);
     logger.info('parse_configuration called!!');
 }
+var querystring = require('querystring');
 FS_API.prototype.fs_cmd = function(req, res){
     var cmd = req.body.cmd;
     var args = req.body.args;
@@ -483,13 +506,17 @@ FS_API.prototype.fs_cmd = function(req, res){
         cmd += ' ';
         cmd += args[i];
     }
-    exec_cmd('fs_cli -x '+cmd,function(error,stdout,stderr){
+    exec_cmd('fs_cli -x "'+cmd+'"',function(error,stdout,stderr){
+        var msg = '';
         if(error){
-            res.send(error.message);
-            return;
+            msg += '{"type":"error",';
+            msg += '"message":"'+error.message+'"}';
+        }
+        else{
+            msg += '{"type":"success",';
+            msg += '"message":"'+stdout+'"}';
         }
 
-        logger.info('stdout:', stdout);
-        res.send(stdout);
+        res.send(msg);
     });
 }
