@@ -8,6 +8,7 @@ var EventEmitter = require('events').EventEmitter;
 var exec_cmd = require('./exec_shell').exec_cmd;
 
 var FS_API = exports.FS_API = function(){
+    this.accountConfigs = new map();
     this.sipusers = new map();
     this.event = new EventEmitter();
     this.event.on('checkConfigUpdate',this.checkConfigUpdate);
@@ -15,10 +16,8 @@ var FS_API = exports.FS_API = function(){
 }
 FS_API.prototype.checkConfigUpdate = function (self){
     self.sipusers.forEach(function(value, key){
-        var sql = "SELECT a.hotlineNO as ANI, s.billing_account as account, " +
-            "s.caller_id_number as user, s.caller_id_name as name, s.password " +
-            "FROM ACCOUNTCONFIG a INNER JOIN sip_users s ON a.accountId = s.billing_account " +
-            "WHERE s.caller_id_number = '" + key + "'";
+        var sql = "SELECT s.billing_account as account, s.caller_id_number as user, s.caller_id_name as name, " +
+            "s.password FROM sip_users s WHERE s.caller_id_number = '" + key + "'";
         db.getDB().query(sql, function(rows, fields){
             if(rows.length > 0){
                 self.sipusers.set(rows[0].user,rows[0]);
@@ -33,6 +32,11 @@ FS_API.prototype.checkConfigUpdate = function (self){
 }
 FS_API.prototype.parse_directory = function (req,res){
     var self = this;
+    //{
+    //    //压力测试代码
+    //    self.test_regist(req,res);
+    //    return;
+    //}
     if(req && req.body){
      if(self.sipusers.has(req.body.user)){
             var row = self.sipusers.get(req.body.user);
@@ -74,6 +78,40 @@ FS_API.prototype.res_regist = function(row, req, res){
     <variable name="user_context" value="custom_dialplan"/>\
     <variable name="effective_caller_id_name" value="' + row.name + '"/>\
     <variable name="effective_caller_id_number" value="' + row.user + '"/>\
+    <variable name="callgroup" value="default"/>\
+    <variable name="sip-force-contact" value="NDLB-connectile-dysfunction"/>\
+    <variable name="x-powered-by" value="http://www.freeswitch.org.cn"/>\
+    </variables>\
+    </user>\
+    </users>\
+    </group>\
+    </groups>\
+    </domain>\
+    </section>\
+    </document>';
+    res.send(xml);
+}
+FS_API.prototype.test_regist = function(req, res){
+    var xml = '<document type="freeswitch/xml">\
+    <section name="directory">\
+    <domain name="' + req.body.domain + '">\
+    <params>\
+    <param name="dial-string" value="{presence_id=${dialed_user}@${dialed_domain}}${sofia_contact(${dialed_user}@${dialed_domain})}"/>\
+    </params>\
+    <groups>\
+    <group name="default">\
+    <users>\
+    <user id="' + req.body.user + '">\
+    <params>\
+    <param name="password" value="asdf"/>\
+    <param name="vm-password" value="' + req.body.user + '"/>\
+    </params>\
+    <variables>\
+    <variable name="toll_allow" value="domestic,international,local"/>\
+    <variable name="accountcode" value="' + req.body.user + '"/>\
+    <variable name="user_context" value="custom_dialplan"/>\
+    <variable name="effective_caller_id_name" value="' + req.body.user + '"/>\
+    <variable name="effective_caller_id_number" value="' + req.body.user + '"/>\
     <variable name="callgroup" value="default"/>\
     <variable name="sip-force-contact" value="NDLB-connectile-dysfunction"/>\
     <variable name="x-powered-by" value="http://www.freeswitch.org.cn"/>\
@@ -173,16 +211,16 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         var number = Destination_Number.substr(Destination_Number.indexOf('_')+1);
                         var sql = "UPDATE sip_users SET binding_work_number='"+number+"' WHERE caller_id_number='"+caller_id+"'";
                         db.getDB().query(sql,function(){
-                            /*? 不确定是否要更新员工表的sipExten字段。暂时注销。
                             sql = "UPDATE employee SET sipExten='"+caller_id+"' WHERE exten = '"+number+"'";
-                            db.getDB().query(sql,function(){});*/
-                            var xml = '<extension name="binding_demo">\
-                                <condition field="destination_number" expression="^(.*)$">\
-                                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
-                                <action application="hangup"/>\
-                                </condition>\
-                                </extension>';
-                            res.send(self.xml_start + xml + self.xml_end);
+                            db.getDB().query(sql,function(){
+                                var xml = '<extension name="binding_demo">\
+                                    <condition field="destination_number" expression="^(.*)$">\
+                                    <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                                    <action application="hangup"/>\
+                                    </condition>\
+                                    </extension>';
+                                res.send(self.xml_start + xml + self.xml_end);
+                            });
                         });
                     }
                     else if(Destination_Number === 'query_binding'){
@@ -219,17 +257,16 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         var caller_id = req.body['Caller-Caller-ID-Number'];
                         var sql = "UPDATE sip_users SET binding_work_number='' WHERE caller_id_number='"+caller_id+"'";
                         db.getDB().query(sql,function(){
-                            /*? 不确定是否要更新员工表的sipExten字段。暂时注销。
                             sql = "UPDATE employee SET sipExten='' WHERE exten = '"+number+"'";
                             db.getDB().query(sql,function(){
-                            });*/
-                            var xml = '<extension name="cancel_binding_demo">\
-                                <condition field="destination_number" expression="^(.*)$">\
-                                <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
-                                <action application="hangup"/>\
-                                </condition>\
-                                </extension>';
-                            res.send(self.xml_start + xml + self.xml_end);
+                                var xml = '<extension name="cancel_binding_demo">\
+                                    <condition field="destination_number" expression="^(.*)$">\
+                                    <action application="playback" data="$${base_dir}/sounds/custom_ivr/binding/binding_success.wav"/>\
+                                    <action application="hangup"/>\
+                                    </condition>\
+                                    </extension>';
+                                res.send(self.xml_start + xml + self.xml_end);
+                            });
                         });
                     }
                     else if(Destination_Number === '9196'){
@@ -311,18 +348,26 @@ FS_API.prototype.parse_dialplan = function (req,res){
                                             }
                                             else{
                                                 //服务号判断
-                                                var sql = "SELECT a.accountId account, a.workCallFlow callFlow, a.welcomeIvr welcomWav, " +
-                                                    "a.unWorkIvr afterworkWav,a.frontDesk fD, a.serviceNO, a.startTimeMinute startM, " +
-                                                    "a.endTimeMinute endM, a.startTimeHour startH, a.endTimeHour endH, a.day " +
-                                                    "FROM ACCOUNTCONFIG a WHERE a.serviceNO = '"+Destination_Number+"'";
-                                                db.getDB().query(sql,function(rows,fileds){
-                                                    if(rows.length > 0){
-                                                        self._dialPlan_serverNo(rows,res);
-                                                    }
-                                                    else{
-                                                        res.send(self.xml_start + self.xml_default + self.xml_end);
-                                                    }
-                                                });
+                                                if(self.accountConfigs.has(Destination_Number)){
+                                                    var rows = self.accountConfigs.get(Destination_Number);
+                                                    self._dialPlan_serverNo(rows,res);
+                                                }
+                                                else{
+                                                    var sql = "SELECT a.accountId account, a.workCallFlow callFlow, a.welcomeIvr welcomWav, " +
+                                                        "a.unWorkIvr afterworkWav,a.frontDesk fD, a.serviceNO, a.startTimeMinute startM, " +
+                                                        "a.endTimeMinute endM, a.startTimeHour startH, a.endTimeHour endH, a.day " +
+                                                        "FROM ACCOUNTCONFIG a WHERE a.serviceNO = '"+Destination_Number+"'";
+                                                    db.getDB().query(sql,function(rows,fileds){
+                                                        if(rows.length > 0){
+                                                            rows[0].sip_to_host = req.body['variable_sip_to_host'];
+                                                            self.accountConfigs.set(rows[0].serviceNO,rows);
+                                                            self._dialPlan_serverNo(rows,res);
+                                                        }
+                                                        else{
+                                                            res.send(self.xml_start + self.xml_default + self.xml_end);
+                                                        }
+                                                    });
+                                                }
                                             }
                                         });
                                     }
@@ -365,8 +410,6 @@ FS_API.prototype._dialplan_res = function (rows, res){
             '<action application="set" data="continue_on_fail=true"/>\
             <action application="export" data="dialed_extension=$1"/>\
             <action application="bridge" data="user/'+ user + '@' + realm +'"/>\
-            <action application="answer"/>\
-            <action application="ivr" data="leave_message_ivr"/>\
             </condition>\
             </extension>';
     if(resonance == '0') {
@@ -381,6 +424,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
                }
                else{
                    if(resonance == '1'){
+                       //分机号和手机号同时振铃，其中任一个接听来话，另一个停止振铃。
                        xml = '<extension name="custom_dialplan_res1">\
                         <condition field="destination_number" expression="^(.*)$">'
                        + self.xml_record +
@@ -389,6 +433,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
                         </extension>';
                    }
                    else if(resonance == '2'){
+                       //分机号和手机号顺序振铃，其中任一个接听来话，另一个停止振铃。
                        xml = '<extension name="custom_dialplan_res2">\
                         <condition field="destination_number" expression="^(.*)$">'
                        + self.xml_record +
@@ -403,9 +448,107 @@ FS_API.prototype._dialplan_res = function (rows, res){
     }
 }
 FS_API.prototype._dialPlan_serverNo = function (rows, res){
+    //上下班时间判断
+    var today = new Date();
+    var weekday = today.getDay();
+    if(weekday == 0) weekday = 7;
+    var hours = today.getHours();
+    var minutes = today.getMinutes();
+    var curTime = hours*100+minutes;
+    var startTime = parseInt(rows[0].startH,10)*100+parseInt(rows[0].startM);
+    var endTime = parseInt(rows[0].endH,10)*100+parseInt(rows[0].endM);
+    var realm = rows[0].sip_to_host;
+    if(rows[0].day.indexOf(weekday) >= 0 && startTime <= curTime && curTime <= endTime){
+        //上班时间
+        switch (rows[0].callFlow){
+            case '0' :
+            {
+                //企业总机模式
+                //欢迎语IVR
+                var xml = '<extension name="Enterprise_telephone">\
+                    <condition field="destination_number" expression="^(.*)$">\
+                    <action application="answer"/>\
+                    <action application="sleep" data="500"/>\
+                    <action application="ivr" data="custom_welcome_ivr"/>\
+                    </condition>\
+                    </extension>';
+                res.send(self.xml_start + xml + self.xml_end);
+                break;
+            }
+            case '1' :
+            {
+                //客服模式1
+                var fd = rows[0].fD;
+                var numbers = fd.split(',');
+                var data = "";
+                for(var i in numbers){
+                    var num = numbers[i];
+                    if(data == ""){
+                        data = "user/"+num+"@"+realm;
+                    }
+                    else{
+                        data = data + "," + "user/"+num+"@"+realm;
+                    }
+                }
+                var welcomeWav = "http://127.0.0.1:8181/welcome.wav";
+                if(rows[0].welcomWav && rows[0].welcomWav != null){
+                    welcomeWav = rows[0].welcomWav;
+                    if(welcomeWav.indexOf('http:') != -1){
+                        welcomeWav = "http://124.193.171.213:8686" + welcomeWav;
+                    }
+                }
 
+                var xml = '<extension name="Customer_service1">\
+                    <condition field="destination_number" expression="^(.*)$">\
+                    <action application="answer"/>\
+                    <action application="playback" data="http_cache://'+welcomeWav+'"/>\
+                    <action application="bridge" data="'+data+'"/>\
+                    </condition>\
+                    </extension>';
+                res.send(self.xml_start + xml + self.xml_end);
+                break;
+            }
+            case '2' :
+            {
+                //客服模式2
+                var fd = rows[0].fD;
+                var numbers = fd.split(',');
+                var data = "";
+                for(var i in numbers){
+                    var num = numbers[i];
+                    if(data == ""){
+                        data = "user/"+num+"@"+realm;
+                    }
+                    else{
+                        data = data + "," + "user/"+num+"@"+realm;
+                    }
+                }
+                var xml = '<extension name="Customer_service2">\
+                    <condition field="destination_number" expression="^(.*)$">\
+                    <action application="bridge" data="'+data+'"/>\
+                    </condition>\
+                    </extension>';
+                res.send(self.xml_start + xml + self.xml_end);
+                break;
+            }
+        }
+    }
+    else{
+        //下班时间
+        //留言
+        var xml = '<extension name="ivr_demo">\
+            <condition field="destination_number" expression="^(.*)$">\
+            <action application="answer"/>\
+            <action application="playback" data="$${base_dir}/sounds/custom_ivr/afterwork.wav"/>\
+            <action application="sleep" data="500"/>\
+            <action application="ivr" data="leave_message_ivr"/>\
+            </condition>\
+            </extension>';
+        res.send(self.xml_start + xml + self.xml_end);
+    }
 }
 FS_API.prototype.parse_configuration = function(req, res){
+    var self = this;
     var ivr_menu_name = req.body['Menu-Name'];
     var xml_start = '<document type="freeswitch/xml">\
         <section name="configuration">\
@@ -421,12 +564,17 @@ FS_API.prototype.parse_configuration = function(req, res){
     switch (ivr_menu_name){
         case 'custom_welcome_ivr' :
         {
-            var sip_to_user = req.body['variable_sip_to_user'];
-            var sql = "SELECT s.caller_id_number, s.realm, s.resonance, " +
-                "s.billing_account FROM ACCOUNTCONFIG c INNER JOIN ACCOUNSERVICENUMBER a INNER JOIN " +
-                "sip_users s ON a.accountId = s.billing_account AND c.accountId = a.accountId AND " +
-                "s.caller_id_number = c.frontDesk WHERE a.serviceNO ='" + sip_to_user + "'";
-            xml = 'greet-long="http_cache://http://127.0.0.1:8181/welcome.wav"\
+            var RDNIS = req.body['Caller-RDNIS'];
+            if(self.accountConfigs.has(RDNIS)){
+                var welcomeWav = "http://127.0.0.1:8181/welcome.wav";
+                var rows = self.accountConfigs.get(RDNIS);
+                if(rows[0].welcomWav && rows[0].welcomWav != null){
+                    welcomeWav = rows[0].welcomWav;
+                    if(welcomeWav.indexOf('http:') != -1){
+                        welcomeWav = "http://124.193.171.213:8686" + welcomeWav;
+                    }
+                }
+                xml = 'greet-long="http_cache://'+welcomeWav+'"\
                 greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -442,6 +590,7 @@ FS_API.prototype.parse_configuration = function(req, res){
                 max-timeouts="3">\
                 <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>\
                 <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/>'
+            }
             break;
         }
         case 'custom_binding_ivr' :
@@ -498,7 +647,6 @@ FS_API.prototype.parse_configuration = function(req, res){
     res.send(xml_start + xml + xml_end);
     logger.info('parse_configuration called!!');
 }
-var querystring = require('querystring');
 FS_API.prototype.fs_cmd = function(req, res){
     var cmd = req.body.cmd;
     var args = req.body.args;
