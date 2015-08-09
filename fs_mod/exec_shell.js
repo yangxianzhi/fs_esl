@@ -9,6 +9,8 @@ exports.exec_cmd = function(cmd,cb){
     shell_process.exec(cmd, function (error, stdout, stderr){
         if(error)
             logger.error(error.message);
-        cb(error,stdout,stderr);
+
+        if(cb)
+            cb(error,stdout,stderr);
     });
 }

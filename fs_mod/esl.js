@@ -70,11 +70,13 @@ ESL.prototype.ListenerConnectEvent = function(webapp) {
 
         self.esl_conn.on('error', function(err) {
             logger.error('error:', err);
+
             //http服务接口会影响FreeSWITCH的启动过程，所以停止HTTP
             //FreeSWITCH启动会请求HTTP接口，导致FreeSWITCH的启动变慢。
             webapp.stopHttpServer(function(){
                 logger.info('httpServer closed');
             });
+
             //启动定时检查机制
             self.event.on('checkFreeSWITCH',self.checkFreeSWITCH);
             setTimeout(function(){
@@ -97,7 +99,14 @@ ESL.prototype.checkFreeSWITCH = function(webapp,self){
         self.event.removeListener('checkFreeSWITCH',self.checkFreeSWITCH);
         self.esl_conn = null;
         webapp.startEslConnect();
-        setTimeout(webapp.startHttpServer(),2000);
+
+        setTimeout(function(){
+            webapp.startHttpServer();
+        },5000);
+
+        setTimeout(function(){
+            exec_cmd('fs_cli -x "sofia profile external rescan reloadxml"');
+        },9000);
     });
 }
 

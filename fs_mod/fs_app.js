@@ -549,32 +549,34 @@ FS_API.prototype._dialPlan_serverNo = function (rows, res){
 }
 FS_API.prototype.parse_configuration = function(req, res){
     var self = this;
-    var ivr_menu_name = req.body['Menu-Name'];
-    var xml_start = '<document type="freeswitch/xml">\
+    var key_value = req.body['key_value'];
+    if(key_value == 'ivr.conf'){
+        var ivr_menu_name = req.body['Menu-Name'];
+        var xml_start = '<document type="freeswitch/xml">\
         <section name="configuration">\
-        <configuration name="ivr.conf" description="IVR menus">\
+        <configuration name="'+key_value+'" description="IVR menus">\
         <menus>\
         <menu name="'+ivr_menu_name+'"';
-    var xml_end = '</menu>\
+        var xml_end = '</menu>\
         </menus>\
         </configuration>\
         </section>\
         </document>';
-    var xml;
-    switch (ivr_menu_name){
-        case 'custom_welcome_ivr' :
-        {
-            var RDNIS = req.body['Caller-RDNIS'];
-            if(self.accountConfigs.has(RDNIS)){
-                var welcomeWav = "http://127.0.0.1:8181/welcome.wav";
-                var rows = self.accountConfigs.get(RDNIS);
-                if(rows[0].welcomWav && rows[0].welcomWav != null){
-                    welcomeWav = rows[0].welcomWav;
-                    if(welcomeWav.indexOf('http:') != -1){
-                        welcomeWav = "http://124.193.171.213:8686" + welcomeWav;
+        var xml;
+        switch (ivr_menu_name){
+            case 'custom_welcome_ivr' :
+            {
+                var RDNIS = req.body['Caller-RDNIS'];
+                if(self.accountConfigs.has(RDNIS)){
+                    var welcomeWav = "http://127.0.0.1:8181/welcome.wav";
+                    var rows = self.accountConfigs.get(RDNIS);
+                    if(rows[0].welcomWav && rows[0].welcomWav != null){
+                        welcomeWav = rows[0].welcomWav;
+                        if(welcomeWav.indexOf('http:') != -1){
+                            welcomeWav = "http://124.193.171.213:8686" + welcomeWav;
+                        }
                     }
-                }
-                xml = 'greet-long="http_cache://'+welcomeWav+'"\
+                    xml = 'greet-long="http_cache://'+welcomeWav+'"\
                 greet-short="$${base_dir}/sounds/custom_ivr/welcome_short.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -590,13 +592,13 @@ FS_API.prototype.parse_configuration = function(req, res){
                 max-timeouts="3">\
                 <entry action="menu-exec-app" digits="0" param="transfer welcome XML custom_dialplan"/>\
                 <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer $1 XML custom_dialplan"/>'
+                }
+                break;
             }
-            break;
-        }
-        case 'custom_binding_ivr' :
-        {
-        //工号绑定IVR
-            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
+            case 'custom_binding_ivr' :
+            {
+                //工号绑定IVR
+                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
                 greet-short="$${base_dir}/sounds/custom_ivr/binding/binding_main.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -611,12 +613,12 @@ FS_API.prototype.parse_configuration = function(req, res){
                 <entry action="menu-sub" digits="1" param="binding_sub_ivr"/>\
                 <entry action="menu-exec-app" digits="2" param="transfer query_binding XML custom_dialplan"/>\
                 <entry action="menu-exec-app" digits="3" param="transfer cancel_binding XML custom_dialplan"/>';
-            break;
-        }
-        case 'binding_sub_ivr' :
-        {
-            //工号绑定IVR, Sub Menu
-            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                break;
+            }
+            case 'binding_sub_ivr' :
+            {
+                //工号绑定IVR, Sub Menu
+                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
                 greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -627,11 +629,11 @@ FS_API.prototype.parse_configuration = function(req, res){
                 digit-len="4">\
                 <entry action="menu-exec-app" digits="/^([0-9][0-9][0-9][0-9])$/" param="transfer binding_$1 XML custom_dialplan"/>\
                 <entry action="menu-top" digits="*"/>';
-            break;
-        }
-        case 'leave_message_ivr' :
-        {
-            xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                break;
+            }
+            case 'leave_message_ivr' :
+            {
+                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
                 greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
@@ -641,11 +643,40 @@ FS_API.prototype.parse_configuration = function(req, res){
                 inter-digit-timeout="2000"\
                 digit-len="4">\
                 <entry action="menu-exec-app" digits="1" param="record_session::$${recordings_dir}/leave_message_ivr/${caller_id_number}.${strftime(%Y-%m-%d-%H-%M-%S)}.wav"/>';
-            break;
+                break;
+            }
         }
+        res.send(xml_start + xml + xml_end);
+
+    }else if(key_value == 'sofia.conf'){
+        var xml_start = '<document type="freeswitch/xml">' +
+            '<section name="configuration">' +
+            '<configuration name="sofia.conf" description="sofia Endpoint">' +
+            '<profiles>' +
+            '<profile name="external">' +
+            '<gateways>';
+
+        var xml_end = '</gateways>' +
+            '</profile>' +
+            '</profiles>' +
+            '</configuration>' +
+            '</section>' +
+            '</document>';
+
+        var xml = '<gateway name="gw1">' +
+            '<param name="username" value="20001172"/>' +
+            '<param name="realm" value="115.29.238.145:6061"/>' +
+            '<param name="password" value="2tgjq"/>' +
+            '<param name="register" value="true"/>' +
+            '</gateway>';
+        xml = xml_start + xml + xml_end;
+        res.send(xml);
     }
-    res.send(xml_start + xml + xml_end);
+    else{
+        //res.sendStatus(404);
+    }
     logger.info('parse_configuration called!!');
+    logger.info('key_value ' + key_value);
 }
 FS_API.prototype.fs_cmd = function(req, res){
     var cmd = req.body.cmd;
