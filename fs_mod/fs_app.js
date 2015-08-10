@@ -152,11 +152,14 @@ FS_API.prototype.parse_dialplan = function (req,res){
         </condition>\
         </extension>';
         var sip_from_user = req.body['variable_sip_from_user'];
-        var sql = "SELECT a.cash, a.status " +
+        var sql = "SELECT a.cash, a.status, s.outbound_gateway gateway " +
             "FROM ACCOUNT a INNER JOIN sip_users s ON a.ID = s.billing_account " +
             "WHERE s.caller_id_number = '" + sip_from_user + "'";
         db.getDB().query(sql,function(rows,fields){
             if(rows.length>0){
+                var gateway = rows[0].gateway;
+                res.gateway = gateway;
+                var cash = parseFloat(rows[0].cash);
                 var status = parseInt(rows[0].status,10);
                 if(status == 2){//状态2，表示账户已经停用
                     var audio = 'account_stop';
@@ -280,45 +283,38 @@ FS_API.prototype.parse_dialplan = function (req,res){
                     }
                     else if(Destination_Number[0] === '9'){
                         var sip_from_user = req.body['variable_sip_from_user'];
-                        var sql = "SELECT a.cash, a.status " +
-                            "FROM ACCOUNT a INNER JOIN sip_users s ON a.ID = s.billing_account " +
-                            "WHERE s.caller_id_number = '" + sip_from_user + "'";
-                        db.getDB().query(sql,function(rows,fields){
-                            if(rows.length > 0){
-                                if(parseFloat(rows[0].cash) <= 0){
-                                    //账户欠费，不能外呼
-                                    var audio = 'cash_insufficient';
+                        if(cash <= 0){
+                            //账户欠费，不能外呼
+                            var audio = 'cash_insufficient';
+                            var xml = '<extension name="custom_outbount">\
+                                <condition field="destination_number" expression="^(.*)$">\
+                                <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
+                                <action application="hangup" data="NORMAL_CLEARING"/>\
+                                </condition>\
+                                </extension>';
+                            res.send(self.xml_start + xml + self.xml_end);
+                        }
+                        else{
+                            //内线打外线要计费
+                            //billing_yes=true 说明要计费
+                            //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
+                            sql = "Select billing_account as account from sip_users where caller_id_number ='" + sip_from_user + "'";
+                            db.getDB().query(sql,function(rows,fields){
+                                if(rows.length > 0){
+                                    self.xml_record = self.xml_record.replace('archive',rows[0].account);
                                     var xml = '<extension name="custom_outbount">\
-                                        <condition field="destination_number" expression="^(.*)$">\
-                                        <action application="playback" data="$${base_dir}/sounds/custom_ivr/'+audio+'.wav"/>\
-                                        <action application="hangup" data="NORMAL_CLEARING"/>\
+                                        <condition field="destination_number" expression="^9(.*)$">'
+                                        + self.xml_record +
+                                        '<action application="set" data="billing_yes=true"/>\
+                                        <action application="set" data="billing_heartbeat=60"/>\
+                                        <action application="set" data="billing_account=' + rows[0].account + '"/>\
+                                        <action application="bridge" data="sofia/gateway/'+gateway+'/$1"/>\
                                         </condition>\
                                         </extension>';
                                     res.send(self.xml_start + xml + self.xml_end);
                                 }
-                                else{
-                                    //内线打外线要计费
-                                    //billing_yes=true 说明要计费
-                                    //billing_heartbeat=60 设置计费心跳，没60秒计算一次费用。
-                                    sql = "Select billing_account as account from sip_users where caller_id_number ='" + sip_from_user + "'";
-                                    db.getDB().query(sql,function(rows,fields){
-                                        if(rows.length > 0){
-                                            self.xml_record = self.xml_record.replace('archive',rows[0].account);
-                                            var xml = '<extension name="custom_outbount">\
-                                                <condition field="destination_number" expression="^9(.*)$">'
-                                                + self.xml_record +
-                                                '<action application="set" data="billing_yes=true"/>\
-                                                <action application="set" data="billing_heartbeat=60"/>\
-                                                <action application="set" data="billing_account=' + rows[0].account + '"/>\
-                                                <action application="bridge" data="sofia/gateway/gw1/$1"/>\
-                                                </condition>\
-                                                </extension>';
-                                            res.send(self.xml_start + xml + self.xml_end);
-                                        }
-                                    });
-                                }
-                            }
-                        });
+                            });
+                        }
                     }
                     else{
                         //可能是工号
@@ -428,7 +424,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
                        xml = '<extension name="custom_dialplan_res1">\
                         <condition field="destination_number" expression="^(.*)$">'
                        + self.xml_record +
-                       '<action application="bridge" data="user/'+ user + '@' + realm + ',[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
+                       '<action application="bridge" data="user/'+ user + '@' + realm + ',[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/'+res.gateway+'/' + mobile + '"/>\
                         </condition>\
                         </extension>';
                    }
@@ -437,7 +433,7 @@ FS_API.prototype._dialplan_res = function (rows, res){
                        xml = '<extension name="custom_dialplan_res2">\
                         <condition field="destination_number" expression="^(.*)$">'
                        + self.xml_record +
-                       '<action application="bridge" data="user/'+ user + '@' + realm + '|[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/gw1/' + mobile + '"/>\
+                       '<action application="bridge" data="user/'+ user + '@' + realm + '|[billing_yes=true,billing_heartbeat=60,billing_account='+ account +']sofia/gateway/'+res.gateway+'/' + mobile + '"/>\
                         </condition>\
                         </extension>';
                    }
@@ -649,28 +645,38 @@ FS_API.prototype.parse_configuration = function(req, res){
         res.send(xml_start + xml + xml_end);
 
     }else if(key_value == 'sofia.conf'){
-        var xml_start = '<document type="freeswitch/xml">' +
-            '<section name="configuration">' +
-            '<configuration name="sofia.conf" description="sofia Endpoint">' +
-            '<profiles>' +
-            '<profile name="external">' +
-            '<gateways>';
-
-        var xml_end = '</gateways>' +
-            '</profile>' +
-            '</profiles>' +
-            '</configuration>' +
-            '</section>' +
-            '</document>';
-
-        var xml = '<gateway name="gw1">' +
-            '<param name="username" value="20001172"/>' +
-            '<param name="realm" value="115.29.238.145:6061"/>' +
-            '<param name="password" value="2tgjq"/>' +
-            '<param name="register" value="true"/>' +
-            '</gateway>';
-        xml = xml_start + xml + xml_end;
-        res.send(xml);
+        var sql = "SELECT * FROM gateway";
+        db.getDB().query(sql,function(rows,fields){
+            var xml_start = '<document type="freeswitch/xml">' +
+                '<section name="configuration">' +
+                '<configuration name="sofia.conf" description="sofia Endpoint">' +
+                '<profiles>' +
+                '<profile name="external">' +
+                '<gateways>';
+            var xml_end = '</gateways>' +
+                '</profile>' +
+                '</profiles>' +
+                '</configuration>' +
+                '</section>' +
+                '</document>';
+            var xml = '';
+            for(var r in rows){
+                for(var f in fields){
+                    var name = fields[f].name;
+                    var value = rows[r][name];
+                    if(value != null && value != ''){
+                        if(name == 'name'){
+                            xml = xml + '<gateway name="'+value+'">';
+                        }else{
+                            xml = xml + '<param name="'+name+'" value="'+value+'"/>';
+                        }
+                    }
+                }
+                xml = xml + '</gateway>';
+            }
+            xml = xml_start + xml + xml_end;
+            res.send(xml);
+        });
     }
     else{
         //res.sendStatus(404);

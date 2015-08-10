@@ -127,20 +127,48 @@ CREATE TABLE `employee` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Table structure for gateway
+-- ----------------------------
+DROP TABLE IF EXISTS `gateway`;
+CREATE TABLE `gateway` (
+  `name` varchar(10) NOT NULL COMMENT '网关名称',
+  `username` varchar(16) NOT NULL COMMENT 'account username *required*',
+  `realm` varchar(32) NOT NULL COMMENT 'auth realm: *optional* same as gateway name, if blank',
+  `password` varchar(32) NOT NULL COMMENT ' account password *required*',
+  `register` varchar(5) NOT NULL COMMENT 'do not register',
+  `from-user` varchar(16) DEFAULT NULL COMMENT 'username to use in from: *optional* same as  username, if blank',
+  `from-domain` varchar(32) DEFAULT NULL COMMENT 'domain to use in from: *optional* same as  realm, if blank',
+  `extension` varchar(16) DEFAULT NULL COMMENT 'extension for inbound calls: *optional* same as username, if blank',
+  `proxy` varchar(32) DEFAULT NULL COMMENT 'proxy host: *optional* same as realm, if blank',
+  `register-proxy` varchar(32) DEFAULT NULL COMMENT 'send register to this proxy: *optional* same as proxy, if blank',
+  `expire-seconds` int(5) DEFAULT NULL COMMENT 'expire in seconds: *optional* 3600, if blank',
+  `register-transport` varchar(4) DEFAULT NULL COMMENT 'which transport to use for register',
+  `retry-seconds` int(5) DEFAULT NULL COMMENT 'How many seconds before a retry when a failure or timeout occurs',
+  `caller-id-in-from` varchar(5) DEFAULT NULL COMMENT 'Use the callerid of an inbound call in the from field on outbound calls via this gateway',
+  `contact-params` varchar(32) DEFAULT NULL COMMENT 'extra sip params to send in the contact',
+  `extension-in-contact` varchar(5) DEFAULT NULL COMMENT 'Put the extension in the contact',
+  `ping` varchar(5) DEFAULT NULL COMMENT 'send an options ping every x seconds, failure will unregister and/or mark it down',
+  `cid-type` varchar(10) DEFAULT NULL COMMENT 'cid-type',
+  `rfc-5626` varchar(5) DEFAULT NULL COMMENT 'rfc5626 : Abilitazione rfc5626',
+  `reg-id` int(3) DEFAULT NULL COMMENT 'rfc5626 : extra sip params to send in the contact'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- ----------------------------
 -- Table structure for sip_users
 -- ----------------------------
 DROP TABLE IF EXISTS `sip_users`;
 CREATE TABLE `sip_users` (
-  `ID` varchar(36) NOT NULL,
-  `billing_account` varchar(36) NOT NULL,
-  `binding_mobile_number` varchar(20) NOT NULL,
-  `binding_work_number` varchar(20) NOT NULL,
-  `caller_id_name` varchar(20) NOT NULL,
-  `caller_id_number` varchar(36) DEFAULT NULL,
-  `password` varchar(20) NOT NULL,
-  `realm` varchar(20) NOT NULL,
-  `resonance` varchar(20) NOT NULL,
-  `status` varchar(20) NOT NULL,
+  `ID` varchar(36) NOT NULL COMMENT '记录ID',
+  `billing_account` varchar(36) NOT NULL COMMENT '绑定的计费账号',
+  `binding_work_number` varchar(20) NOT NULL COMMENT '绑定的工号',
+  `caller_id_name` varchar(20) NOT NULL COMMENT 'sip用户名',
+  `caller_id_number` varchar(36) NOT NULL COMMENT 'sip用户ID',
+  `password` varchar(20) NOT NULL COMMENT '密码',
+  `realm` varchar(20) NOT NULL COMMENT '注册域名',
+  `resonance` varchar(20) NOT NULL COMMENT '来电的振铃方式：分机和手机共振、顺振和只分机响铃',
+  `status` varchar(20) NOT NULL COMMENT '注册状态',
+  `binding_mobile_number` varchar(20) NOT NULL COMMENT '绑定的手机号',
+  `outbound_gateway` varchar(10) NOT NULL COMMENT '外呼时指定的网关',
   PRIMARY KEY (`ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

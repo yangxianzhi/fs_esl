@@ -39,6 +39,11 @@ ESL.prototype.StartConnect = function (opt,cb)
             self.esl_conn.subscribe('ALL', function() {
                 cb();
             });
+
+            //重新加载网关配置
+            setTimeout(function(){
+                exec_cmd('fs_cli -x "sofia profile external rescan reloadxml"');
+            },8000);
         });
     }
     return self.esl_conn;
@@ -100,13 +105,15 @@ ESL.prototype.checkFreeSWITCH = function(webapp,self){
         self.esl_conn = null;
         webapp.startEslConnect();
 
+        //启动HTTP服务
         setTimeout(function(){
             webapp.startHttpServer();
-        },5000);
+        },4000);
 
+        //加载网关配置
         setTimeout(function(){
             exec_cmd('fs_cli -x "sofia profile external rescan reloadxml"');
-        },9000);
+        },8000);
     });
 }
 
