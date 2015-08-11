@@ -629,8 +629,8 @@ FS_API.prototype.parse_configuration = function(req, res){
             }
             case 'leave_message_ivr' :
             {
-                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
-                greet-short="$${base_dir}/sounds/custom_ivr/binding/input_WorkNumber.wav"\
+                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/leave_message.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/binding/leave_message.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
                 timeout="10000"\
