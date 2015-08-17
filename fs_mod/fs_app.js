@@ -664,7 +664,8 @@ FS_API.prototype.parse_configuration = function(req, res){
                 for(var f in fields){
                     var name = fields[f].name;
                     var value = rows[r][name];
-                    if(value != null && value != ''){
+                    name = name.replace(/_/g,'-');
+                    if(value != null && value != '' && name != 'ID'){
                         if(name == 'name'){
                             xml = xml + '<gateway name="'+value+'">';
                         }else{
