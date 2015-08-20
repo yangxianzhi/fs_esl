@@ -129,13 +129,13 @@ FS_API.prototype.parse_dialplan = function (req,res){
     var self = this;
     self.xml_record = '<action application="set" data="RECORD_TITLE=Recording \
         ${destination_number} ${caller_id_number} ${strftime(%Y-%m-%d %H:%M)}"/>\
-        <action application="set" data="RECORD_COPYRIGHT=(c) 2011"/>\
+        <action application="set" data="RECORD_COPYRIGHT=(c) 2015"/>\
         <action application="set" data="RECORD_SOFTWARE=FreeSWITCH"/>\
         <action application="set" data="RECORD_ARTIST=FreeSWITCH"/>\
         <action application="set" data="RECORD_COMMENT=FreeSWITCH"/>\
         <action application="set" data="RECORD_DATE=${strftime(%Y-%m-%d %H:%M)}"/>\
         <action application="set" data="RECORD_STEREO=true"/>\
-        <action application="record_session" data="$${base_dir}/recordings/archive/${strftime(%Y-%m-%d)}/${caller_id_number}/[${strftime(%Y-%m-%d %H-%M-%S)}] ${caller_id_number}-${destination_number}.wav"/>';
+        <action application="record_session" data="$${recordings_dir}/archive/${strftime(%Y-%m-%d)}/${caller_id_number}/[${strftime(%Y-%m-%d %H-%M-%S)}] ${caller_id_number}-${destination_number}.wav"/>';
 
     var Context = req.body['Caller-Context'];
     if(Context === 'custom_dialplan'){
@@ -271,6 +271,34 @@ FS_API.prototype.parse_dialplan = function (req,res){
                                 res.send(self.xml_start + xml + self.xml_end);
                             });
                         });
+                    }
+                    else if(Destination_Number === 'leave_message'){
+                        var RDNIS = req.body['Caller-RDNIS'];
+                        var xml_leave_message =
+                            '<action application="set" data="RECORD_TITLE=LeaveMessage '+RDNIS+' ${caller_id_number} ${strftime(%Y-%m-%d %H:%M)}"/>\
+                            <action application="set" data="RECORD_COPYRIGHT=(c) 2015"/>\
+                            <action application="set" data="RECORD_SOFTWARE=FreeSWITCH"/>\
+                            <action application="set" data="RECORD_ARTIST=FreeSWITCH"/>\
+                            <action application="set" data="RECORD_COMMENT=FreeSWITCH"/>\
+                            <action application="set" data="RECORD_DATE=${strftime(%Y-%m-%d %H:%M)}"/>\
+                            <action application="set" data="RECORD_STEREO=true"/>\
+                            <action application="set" data="leave_message=true"/>\
+                            <action application="record_session" data="$${recordings_dir}/leave_message/${strftime(%Y-%m-%d)}/[${strftime(%Y-%m-%d %H-%M-%S)}] ${caller_id_number}-'+RDNIS+'.wav"/>';
+
+                        var xml = '<extension name="leave_message">\
+                            <condition field="destination_number" expression="^(.*)$">\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/leave_message_prompt.wav"/>\
+                            <action application="sleep" data="1000"/>\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/tone.wav"/>\
+                            <action application="answer"/>\
+                            <action application="sleep" data="500"/>'
+                            + xml_leave_message +
+                            '<action application="sleep" data="30000"/>\
+                            <action application="hangup" data="NORMAL_CLEARING"/>\
+                            </condition>\
+                            </extension>';
+
+                        res.send(self.xml_start + xml + self.xml_end);
                     }
                     else if(Destination_Number === '9196'){
                         var xml = '<extension name="echo">\
@@ -445,9 +473,12 @@ FS_API.prototype._dialplan_res = function (rows, res){
 }
 FS_API.prototype._dialPlan_serverNo = function (rows, res){
     //上下班时间判断
+    var self = this;
     var today = new Date();
     var weekday = today.getDay();
     if(weekday == 0) weekday = 7;
+    if(rows[0].endH == '00' || rows[0].endH == '0') rows[0].endH = '23';
+    if(rows[0].endM == '00' || rows[0].endM == '0') rows[0].endM = '59';
     var hours = today.getHours();
     var minutes = today.getMinutes();
     var curTime = hours*100+minutes;
@@ -532,7 +563,7 @@ FS_API.prototype._dialPlan_serverNo = function (rows, res){
     else{
         //下班时间
         //留言
-        var xml = '<extension name="ivr_demo">\
+        var xml = '<extension name="Customer_afterwork">\
             <condition field="destination_number" expression="^(.*)$">\
             <action application="answer"/>\
             <action application="playback" data="$${base_dir}/sounds/custom_ivr/afterwork.wav"/>\
@@ -568,7 +599,7 @@ FS_API.prototype.parse_configuration = function(req, res){
                     var rows = self.accountConfigs.get(RDNIS);
                     if(rows[0].welcomWav && rows[0].welcomWav != null){
                         welcomeWav = rows[0].welcomWav;
-                        if(welcomeWav.indexOf('http:') != -1){
+                        if(welcomeWav.indexOf('http:') == -1){
                             welcomeWav = "http://124.193.171.213:8686" + welcomeWav;
                         }
                     }
@@ -629,16 +660,19 @@ FS_API.prototype.parse_configuration = function(req, res){
             }
             case 'leave_message_ivr' :
             {
-                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/binding/leave_message.wav"\
-                greet-short="$${base_dir}/sounds/custom_ivr/binding/leave_message.wav"\
+                xml = 'greet-long="$${base_dir}/sounds/custom_ivr/leave_message.wav"\
+                greet-short="$${base_dir}/sounds/custom_ivr/leave_message.wav"\
                 invalid-sound="$${base_dir}/sounds/custom_ivr/binding/input_error.wav"\
                 exit-sound="$${base_dir}/sounds/custom_ivr/binding/input_error_3_times.wav"\
+                confirm-macro=""\
+                confirm-key=""\
+                tts-engine="flite"\
+                tts-voice="rms"\
+                confirm-attempts="3"\
                 timeout="10000"\
                 max-failures="3"\
-                max-timeouts="3"\
-                inter-digit-timeout="2000"\
-                digit-len="4">\
-                <entry action="menu-exec-app" digits="1" param="record_session::$${recordings_dir}/leave_message_ivr/${caller_id_number}.${strftime(%Y-%m-%d-%H-%M-%S)}.wav"/>';
+                max-timeouts="3">\
+                <entry action="menu-exec-app" digits="1" param="transfer leave_message XML custom_dialplan"/>';
                 break;
             }
         }
