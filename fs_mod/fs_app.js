@@ -25,6 +25,19 @@ FS_API.prototype.checkConfigUpdate = function (self){
         });
     });
 
+    self.accountConfigs.forEach(function(value,key){
+        var sql = "SELECT a.accountId account, a.workCallFlow callFlow, a.welcomeIvr welcomWav, " +
+            "a.unWorkIvr afterworkWav,a.frontDesk fD, a.serviceNO, a.startTimeMinute startM, " +
+            "a.endTimeMinute endM, a.startTimeHour startH, a.endTimeHour endH, a.day " +
+            "FROM ACCOUNTCONFIG a WHERE a.serviceNO = '"+key+"'";
+        db.getDB().query(sql,function(rows,fileds){
+            if(rows.length > 0){
+                rows[0].sip_to_host = value[0].sip_to_host;
+                self.accountConfigs.set(rows[0].serviceNO,rows);
+            }
+        });
+    });
+
     setTimeout(function(){
         self.event.emit('checkConfigUpdate',self);
     },10 * 60 * 1000);
