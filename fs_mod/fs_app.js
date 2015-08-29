@@ -288,12 +288,13 @@ FS_API.prototype.parse_dialplan = function (req,res){
                         var xml = '<extension name="leave_message">\
                             <condition field="destination_number" expression="^(.*)$">\
                             <action application="playback" data="$${base_dir}/sounds/custom_ivr/leave_message_prompt.wav"/>\
-                            <action application="sleep" data="1000"/>\
-                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/tone.wav"/>\
-                            <action application="answer"/>\
-                            <action application="sleep" data="500"/>'
+                            <action application="sleep" data="500"/>\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/tone.wav"/>'+
+                            //'<action application="answer"/>'+
+                            '<action application="sleep" data="500"/>'
                             + xml_leave_message +
                             '<action application="sleep" data="30000"/>\
+                            <action application="playback" data="$${base_dir}/sounds/custom_ivr/leave_message_bye.wav"/>\
                             <action application="hangup" data="NORMAL_CLEARING"/>\
                             </condition>\
                             </extension>';
@@ -477,8 +478,12 @@ FS_API.prototype._dialPlan_serverNo = function (rows, res){
     var today = new Date();
     var weekday = today.getDay();
     if(weekday == 0) weekday = 7;
-    if(rows[0].endH == '00' || rows[0].endH == '0') rows[0].endH = '23';
-    if(rows[0].endM == '00' || rows[0].endM == '0') rows[0].endM = '59';
+    if(rows[0].endH == '00' || rows[0].endH == '0'){
+        if(rows[0].endM == '00' || rows[0].endM == '0'){
+            rows[0].endH = '23';
+            rows[0].endM = '59';
+        }
+    }
     var hours = today.getHours();
     var minutes = today.getMinutes();
     var curTime = hours*100+minutes;

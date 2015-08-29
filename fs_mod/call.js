@@ -114,4 +114,17 @@ Call.prototype.UpdateInfo = function(evt){
         db.getDB().query(sql);
         self.isInsert = true;
     }
+
+    if(evt.type == 'RECORD_STOP'){
+        var leave_message = evt.getHeader('variable_leave_message');
+        if(leave_message == 'true'){
+            var Cause = evt.getHeader('Record-Completion-Cause');
+            var DateLocal = evt.getHeader('Event-Date-Local');
+            var sql = "INSERT INTO LeaveMessage (UUID,CREATEDATETIME,CallerIDNumber,CalleeIDNumber," +
+                "RecordFilePath,RecordSeconds,RecordCompletionCause) VALUES ('" +
+                self.UUID + "','" + DateLocal + "','" + self.CallerIDNumber + "','" + self.CalleeIDNumber + "','" +
+                self.RecordFilePath + "','" + self.RecordSeconds + "','" + Cause + "')";
+            db.getDB().query(sql);
+        }
+    }
 }

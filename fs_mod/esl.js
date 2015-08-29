@@ -3,7 +3,7 @@
  */
 var mod_esl = require('modesl');
 var Call = require('./call').Call;
-var logger = require("../logger").getLogger('ConnEvent','INFO');
+var logger = require("../logger").getLogger('ConnEvent',/*'DEBUG'*/'INFO');
 var map = require('hashmap');
 var db = require('../db_mod/database');
 var exec_cmd = require('./exec_shell').exec_cmd;
